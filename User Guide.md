@@ -14,7 +14,7 @@
     "_TEMPLATE" from the copied file's name ("wranglerconfig.txt").
 6.  Set up an account on GBIF.org and enter your credentials into
     your copy of wranglerconfig.txt.
-7.  Download DB Browser for SQLite (https://sqlitebrowser.org/) or
+7.  Download [DB Browser for SQLite](https://sqlitebrowser.org/) or
     another application for interacting with SQLite database.
 
 ## Using the Wildlife Wrangler
@@ -27,6 +27,20 @@ The user enters species concepts and unique sets of filtering parameters in thei
 Jupyter Notebook with a species concept of interest, filter parameters sets to use, and relevant directories.  When the notebook is
 run, code that is stored in "wrangler_functions.py" and the notebook itself retrieves records from GBIF, filters out unsuitable records, creates an output database where
 suitable records are stored along with documentation and summaries of record attributes before and after filtering, and performs various summaries of data attributes within the notebook.  Thus, the primary results of running the wrangler are 1) the notebook with documentation and data summaries and 2) the output (SQLite) database containing suitable records.  
+
+### Components of the Framework
+*  __wildlife-wrangler.sqlite__ -- a centralized place to store filtering
+   criteria and species concepts.  Saving filter sets (criteria) and species concepts as unique items in a database makes it much easier to explore
+   combinations of species concepts and filtering criteria.  For example, if you want to use the same criteria for 20 species, you can call the same criteria each of the 20 times with just the codes.  This setup was chosen with the running of hundreds of queries over time in mind.
+*  __report.ipynb__ -- this is where you control/run the wrangler.  It's
+   kind of like a beefed-up form and report all in one.  Once you have species concepts and filter sets entered into wildlife-wrangler.sqlite, you can copy report notebooks to create and run occurrence record queries/requests/downloads.
+*  __wranglerconfig__ -- this is a text file where you store some personal
+   information that you wouldn't want saved in the notebooks: your email
+   address and password for your GBIF account, which is needed in order to
+   requests large downloads from GBIF.
+*  __wrangler_functions.py__ -- a python module containing the meat and
+   and potatos functions of the wrangler.  DO NOT CHANGE!  Much of the necessary code is kept here to avoid having a thousand lines of code in the report.ipynb.  You can call some functions from this by importing the module in ipython (i.e., "import wrangler_functions as wranglers").  That
+   can be handy for using the "getGBIFcode" function.
 
 ### Detailed Instructions
 1.  Open your copy of "__widlife-wrangler.sqlite__".  
@@ -56,6 +70,7 @@ suitable records are stored along with documentation and summaries of record att
    in the "table_definitions" and "column_definitions" tables.  EXample
    entries are included for "species_concepts", "gbif_requests", and "gbif_filters".
 *  Example report notebooks are provided in the examples folder.
+*  [git](https://git-scm.com/)
 *  [Conda](https://docs.conda.io/projects/conda/en/latest/index.html)
 *  [Jupyter Notebook](https://jupyter.org/)
 *  [SQLite](https://www.sqlite.org/index.html)
