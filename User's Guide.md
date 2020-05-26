@@ -62,9 +62,21 @@ run, code that is stored in "wrangler_functions.py" and the notebook itself retr
     an html file and archive it for reference later.  
 
 #### Where to Find Help
-*  The wrangler uses the [pygbif](https://pygbif.readthedocs.io/en/latest/)  package, so its documentation can help
-   explain the request step.
 *  Within "wildlife-wrangler.sqlite", all tables and columns are explained
    in the "table_definitions" and "column_definitions" tables.  Example
    entries are included for "species_concepts", "gbif_requests", and "gbif_filters".
 *  Example report notebooks are provided in the examples folder.
+*  The wrangler uses the [pygbif](https://pygbif.readthedocs.io/en/latest/)
+   package, so its documentation can help explain the request step.
+   These are the GBIF fields currently used to answer key questions about records:
+   * What? -- "id", "gbifID", "individualCount", "identificationQualifier"
+
+   * When? -- "eventDate", "retrievalDate"
+
+   * Where? -- "coordinateUncertaintyInMeters", "decimalLatitude", "decimalLongitude", "footprintWKT", "geodeticDatum"
+
+   * Who provided? -- "collectionCode", "institutionCode", "datasetName"
+
+   * How obtained? -- "basisOfRecord", "samplingProtocol", "establishmentMeans",
+
+   * Issues, notes, comments -- "issue" or "issues", "locality", "eventRemarks", "locationRemarks", "occurrenceRemarks"
