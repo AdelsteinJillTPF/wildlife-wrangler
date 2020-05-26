@@ -1,17 +1,16 @@
 ## Installation
-1.  Use git to clone the master repo from github to you computer.
-2.  Build a conda environment. Running the following code in a conda shell
+1.  Use [Git](https://git-scm.com/) to clone the master repo from github to you computer.
+2.  Build a [Conda](https://docs.conda.io/projects/conda/en/latest/index.html) environment. Running the following code in a conda shell
     should create a suitable environment named "wrangler":
     a. "conda create -n wrangler python=3.6 pandas jupyter basemap-data-hires notebook numpy shapely"
     b. "conda activate wrangler"
     c. "pip install pygbif python-dwca-reader sciencebasepy"
-3.  Install spatialite.  Spatialite is a spatial extension for SQLite.  SQLite
-    is included in Python, but not the spatialite extension.  See the
-    included file "spatialite PC install notes.txt" for more instructions.
+3.  Install [Spatialite](https://www.gaia-gis.it/fossil/libspatialite/index).  Spatialite is a spatial extension for [SQLite](https://www.sqlite.org/index.html).  
+    SQLite is included in Python, but not the spatialite extension.  See the included file "spatialite PC install notes.txt" for more instructions.
 4.  Copy the wildlife-wrangler_TEMPLATE.sqlite file to your computer, and
-    delete "_TEMPLATE" from the copied file's name ("wildlife-wrangler.sqlite").
+    delete "TEMPLATE" from the copied file's name ("wildlife-wrangler.sqlite").
 5.  Copy the wranglerconfig_TEMPLATE.txt file to your computer and delete
-    "_TEMPLATE" from the copied file's name ("wranglerconfig.txt").
+    "TEMPLATE" from the copied file's name ("wranglerconfig.txt").
 6.  Set up an account on GBIF.org and enter your credentials into
     your copy of wranglerconfig.txt.
 7.  Download [DB Browser for SQLite](https://sqlitebrowser.org/) or
@@ -22,13 +21,12 @@ The Wildlife Wrangler is a set of tools to facilitate queries and filtering of
 species occurrence records.  While it automates many tasks, there is still
 a bit of work that must be done by the user.
 
-### General Overview of the Workflow
+#### General Overview of the Workflow
 The user enters species concepts and unique sets of filtering parameters in their copy of wildlife-wrangler.sqlite, then fills out a small portion of a
-Jupyter Notebook with a species concept of interest, filter parameters sets to use, and relevant directories.  When the notebook is
-run, code that is stored in "wrangler_functions.py" and the notebook itself retrieves records from GBIF, filters out unsuitable records, creates an output database where
-suitable records are stored along with documentation and summaries of record attributes before and after filtering, and performs various summaries of data attributes within the notebook.  Thus, the primary results of running the wrangler are 1) the notebook with documentation and data summaries and 2) the output (SQLite) database containing suitable records.  
+[Jupyter Notebook](https://jupyter.org/) with codes for a species concept and filter parameters sets to use and relevant directories.  When the notebook is
+run, code that is stored in "wrangler_functions.py" and the notebook itself retrieves records from GBIF, filters out unsuitable records, creates an output database where suitable records are stored along with documentation and summaries of record attributes before and after filtering, and performs various summaries of data attributes within the notebook.  Thus, the primary results of running the wrangler are 1) the notebook with documentation and data summaries and 2) the output (SQLite) database containing suitable records.  
 
-### Components of the Framework
+#### Components of the Framework
 *  __wildlife-wrangler.sqlite__ -- a centralized place to store filtering
    criteria and species concepts.  Saving filter sets (criteria) and species concepts as unique items in a database makes it much easier to explore
    combinations of species concepts and filtering criteria.  For example, if you want to use the same criteria for 20 species, you can call the same criteria each of the 20 times with just the codes.  This setup was chosen with the running of hundreds of queries over time in mind.
@@ -39,10 +37,10 @@ suitable records are stored along with documentation and summaries of record att
    address and password for your GBIF account, which is needed in order to
    requests large downloads from GBIF.
 *  __wrangler_functions.py__ -- a python module containing the meat and
-   and potatos functions of the wrangler.  DO NOT CHANGE!  Much of the necessary code is kept here to avoid having a thousand lines of code in the report.ipynb.  You can call some functions from this by importing the module in ipython (i.e., "import wrangler_functions as wranglers").  That
+   and potatoes functions of the wrangler.  DO NOT CHANGE!  Much of the necessary code is kept here to avoid having a thousand lines of code in the report.ipynb.  You can call some functions from this by importing the module in ipython (i.e., "import wrangler_functions as wranglers").  That
    can be handy for using the "getGBIFcode" function.
 
-### Detailed Instructions
+#### Detailed Instructions
 1.  Open your copy of "__widlife-wrangler.sqlite__".  
 2.  In the "__species_concepts__" table, enter in a species concept by
     entering a unique species code of your choosing in "species_id", the
@@ -63,15 +61,10 @@ suitable records are stored along with documentation and summaries of record att
 7.  When you have completed a query/notebook, you can export the notebook as
     an html file and archive it for reference later.  
 
-### Where to Find Help
+#### Where to Find Help
 *  The wrangler uses the [pygbif](https://pygbif.readthedocs.io/en/latest/)  package, so its documentation can help
    explain the request step.
 *  Within "wildlife-wrangler.sqlite", all tables and columns are explained
-   in the "table_definitions" and "column_definitions" tables.  EXample
+   in the "table_definitions" and "column_definitions" tables.  Example
    entries are included for "species_concepts", "gbif_requests", and "gbif_filters".
 *  Example report notebooks are provided in the examples folder.
-*  [git](https://git-scm.com/)
-*  [Conda](https://docs.conda.io/projects/conda/en/latest/index.html)
-*  [Jupyter Notebook](https://jupyter.org/)
-*  [SQLite](https://www.sqlite.org/index.html)
-*  [Spatialite](https://www.gaia-gis.it/fossil/libspatialite/index)
