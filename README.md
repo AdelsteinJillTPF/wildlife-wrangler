@@ -2,7 +2,7 @@
 Maintained by Nathan M. Tarr (github.com/nmtarr)
 
 ## Purpose
-The abundance of wildlife occurrence datasets that are currently accessible can be valuable for efforts such as species distribution modeling and range delineation.  However, the task of downloading and cleaning occurrence records is more complex than it may seem at first consideration given errors and uncertainties in data.  This repository provides a framework for collecting and filtering occurrence data that is widely available through API's.  
+The abundance of wildlife occurrence datasets that are currently accessible can be valuable for efforts such as species distribution modeling and range delineation.  However, the task of downloading and cleaning occurrence records is often complex due to errors and uncertainties that are present in datasets.  This repository provides a framework for collecting and filtering occurrence data that are freely available through API's and data requests.  
 
 ## Framework
 Data is requested from occurrence dataset API's and filtered according to species- and request-specific parameters.  Filtered occurrence records are saved in a database.  The details of species-concepts and filter parameter sets are stored in a database for use and reference.  Additionally, Jupyter Notebook documents are created that describe the filtered datasets for the sake of documentation and for decision making about filter parameterization.
