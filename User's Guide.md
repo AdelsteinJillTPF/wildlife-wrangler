@@ -1,5 +1,5 @@
 ## Installation
-1.  Use [Git](https://git-scm.com/) to clone the master repo from github to you computer.
+1.  Use [Git](https://git-scm.com/) to clone the master repo from github to your computer.
 2.  Build a [Conda](https://docs.conda.io/projects/conda/en/latest/index.html) environment. Running the following code in a conda shell
     should create a suitable environment named "wrangler":
     a. "conda create -n wrangler python=3.6 pandas jupyter basemap-data-hires notebook numpy shapely"
@@ -22,18 +22,18 @@ species occurrence records.  While it automates many tasks, there is still
 a bit of work that must be done by the user.
 
 #### General Overview of the Workflow
-The user enters species concepts and unique sets of filtering parameters in their copy of wildlife-wrangler.sqlite, then fills out a small portion of a
-[Jupyter Notebook](https://jupyter.org/) with codes for a species concept and filter parameters sets to use and relevant directories.  When the notebook is
-run, code that is stored in "wrangler_functions.py" and the notebook itself retrieves records from GBIF, filters out unsuitable records, creates an output database where suitable records are stored along with documentation and summaries of record attributes before and after filtering, and performs various summaries of data attributes within the notebook.  Thus, the primary results of running the wrangler are 1) the notebook with documentation and data summaries and 2) the output (SQLite) database containing suitable records.  
+The user enters species information and unique sets of filtering parameters in their copy of wildlife-wrangler.sqlite, then fills out a small portion of a
+[Jupyter Notebook](https://jupyter.org/) document with codes for a species definition and filter parameters sets to use and relevant directories.  When the notebook document is
+run, code that is stored in "wrangler_functions.py" and the notebook document itself retrieves records from GBIF, filters out unsuitable records, creates an output database where suitable records are stored along with documentation and summaries of record attributes before and after filtering, and performs various summaries of data attributes within the notebook document.  Thus, the primary results of running the wrangler are 1) the notebook document with documentation and data summaries and 2) the output (SQLite) database containing suitable records.  
 
 #### Components of the Framework
 *  __wildlife-wrangler.sqlite__ -- a centralized place to store filtering
-   criteria and species concepts.  Saving filter sets (criteria) and species concepts as unique items in a database makes it much easier to explore
-   combinations of species concepts and filtering criteria.  For example, if you want to use the same criteria for 20 species, you can call the same criteria each of the 20 times with just the codes.  This setup was chosen with the running of hundreds of queries over time in mind.
+   criteria and species definitions.  Saving filter sets (criteria) and species definitions as unique items in a database makes it much easier to explore
+   combinations of species definitions and filtering criteria.  For example, if you want to use the same criteria for 20 species, you can call the same criteria each of the 20 times with just the codes.  This setup was chosen with the running of hundreds of queries over time in mind.
 *  __report.ipynb__ -- this is where you control/run the wrangler.  It's
-   kind of like a beefed-up form and report all in one.  Once you have species concepts and filter sets entered into wildlife-wrangler.sqlite, you can copy report notebooks to create and run occurrence record queries/requests/downloads.
+   kind of like a beefed-up form and report all in one.  Once you have species definitions and filter sets entered into wildlife-wrangler.sqlite, you can copy report notebook documents to create and run occurrence record queries/requests/downloads.
 *  __wranglerconfig__ -- this is a text file where you store some personal
-   information that you wouldn't want saved in the notebooks: your email
+   information that you wouldn't want saved in the notebook document: your email
    address and password for your GBIF account, which is needed in order to
    requests large downloads from GBIF.
 *  __wrangler_functions.py__ -- a python module containing the meat and
@@ -42,7 +42,7 @@ run, code that is stored in "wrangler_functions.py" and the notebook itself retr
 
 #### Detailed Instructions
 1.  Open your copy of "__widlife-wrangler.sqlite__".  
-2.  In the "__species_concepts__" table, enter in a species concept by
+2.  In the "__species_concepts__" table, enter in a species definition by
     entering a unique species code of your choosing in "species_id", the
     corresponding gbif species id in "gbif_id", "common_name", and "scientific_name".  GBIF species id codes can be retrieved from their
     website, or with the "getGBIFcode" function available in wildlife_functions.py.  Finally, enter an estimate of the maximum
@@ -52,20 +52,20 @@ run, code that is stored in "wrangler_functions.py" and the notebook itself retr
 4.  In the "__gbif_filters__" table, enter a unique code for your
     post-request filter set in "fiter_id". Fill out all other fields but note that defaults are present for some fields.
 5.  Copy "__report_TEMPLATE.ipynb__" to a location outside of the wrangler
-    repo, say to your project directory.  Rename the notebook to whatever
+    repo, say to your project directory.  Rename the notebook document to whatever
     you like.  Using a name with the species code request_id, and filter_id is helpful.
 6.  In conda, activate your wrangler environment.  Open Jupyter Notebook
     and navigate to your renamed copy of "report_TEMPLATE.ipynb".  Fill out
-    the first two cells of the notebook and run it.  Run time can range from
+    the first two cells of the notebook document and run it.  Run time can range from
     a few seconds to several hours.
-7.  When you have completed a query/notebook, you can export the notebook as
+7.  When you have completed a query/notebook document, you can export the notebook document as
     an html file and archive it for reference later.  
 
 #### Where to Find Help
 *  Within "wildlife-wrangler.sqlite", all tables and columns are explained
    in the "table_definitions" and "column_definitions" tables.  Example
    entries are included for "species_concepts", "gbif_requests", and "gbif_filters".
-*  Example report notebooks are provided in the examples folder.
+*  Example report notebook documents are provided in the examples folder.
 *  The wrangler uses the [pygbif](https://pygbif.readthedocs.io/en/latest/)
    package, so its documentation can help explain the request step.
    These are the GBIF fields currently used to answer key questions about records:
