@@ -10,11 +10,15 @@
 4.  Copy the wildlife-wrangler_TEMPLATE.sqlite file to your computer, and
     delete "TEMPLATE" from the copied file's name ("wildlife-wrangler.sqlite").
 5.  Copy the wranglerconfig_TEMPLATE.txt file to your computer and delete
-    "TEMPLATE" from the copied file's name ("wranglerconfig.txt").
+    "TEMPLATE" from the copied file's name ("wranglerconfig.txt").  Fill out
+    this file.  Be sure to create a folders named "Input" and "Output"
+    within your designated working directory ("workDir").  Use "/" at the
+    end of paths (i.e. "C:/Data/").
 6.  Set up an account on GBIF.org and enter your credentials into
     your copy of wranglerconfig.txt.
 7.  Download [DB Browser for SQLite](https://sqlitebrowser.org/) or
     another application for interacting with SQLite database.
+8.  Run one of the notebook documents in the "Tests" folder.
 
 ## Using the Wildlife Wrangler
 The Wildlife Wrangler is a set of tools to facilitate queries and filtering of
@@ -44,13 +48,18 @@ run, code that is stored in "wrangler_functions.py" and the notebook document it
 1.  Open your copy of "__widlife-wrangler.sqlite__".  
 2.  In the "__species_concepts__" table, enter in a species definition by
     entering a unique species code of your choosing in "species_id", the
-    corresponding gbif species id in "gbif_id", "common_name", and "scientific_name".  GBIF species id codes can be retrieved from their
-    website, or with the "getGBIFcode" function available in wildlife_functions.py.  Finally, enter an estimate of the maximum
-    distance from an observer at which a species could be detected with common surveying methods in "detection_distance_meters".  For example, a shrew should have a value close to 0, whereas a wren should have a value closer to 100 m.  All other fields in this table may be helpful, but are not required.
+    corresponding gbif species id in "gbif_id", "common_name", and "scientific_name".  
+    GBIF species id codes can be retrieved from their website, or with the
+    "getGBIFcode" function available in wildlife_functions.py.  Finally, enter
+    an estimate of the maximum distance from an observer at which a species
+    could be detected with common surveying methods in "detection_distance_meters".  
+    For example, a shrew should have a value close to 0, whereas a wren should
+    have a value closer to 100 m.  All other fields in this table may be
+    helpful, but are not required.
 3.  In the "__gbif_requests__" table, enter a unique code for your filter
     set in "request_id".  Fill out each field, but note many fields have defaults.  These will be criteria for a first stage of filtering: only records meeting these criteria will be requested from the API.
 4.  In the "__gbif_filters__" table, enter a unique code for your
-    post-request filter set in "fiter_id". Fill out all other fields but note that defaults are present for some fields.
+    post-request filter set in "fiter_id". Fill out all other fields but note that defaults are present for some fields.  
 5.  Copy "__report_TEMPLATE.ipynb__" to a location outside of the wrangler
     repo, say to your project directory.  Rename the notebook document to whatever
     you like.  Using a name with the species code request_id, and filter_id is helpful.

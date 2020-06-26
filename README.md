@@ -1,4 +1,4 @@
-# The Wildlife wrangler
+# The Wildlife Wrangler
 Maintained by Nathan M. Tarr (github.com/nmtarr)
 
 ## Purpose
