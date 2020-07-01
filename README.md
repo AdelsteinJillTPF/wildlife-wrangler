@@ -45,24 +45,19 @@ This framework is designed to have certain features that provide summaries that 
   errors.  This topic is discussed at length in the user's guide.
 
 
-## Recent changes (April 10, 2020)
+## Recent changes (July 1, 2020)
 * Added ability to limit requests to within geometries.
 * Added ability to specify a limiting polygon for a species definition.
 * Occurrence record database (output) now includes column for weight that users can use to omit or devalue undesirable records.
-* Handling requests of > 200,000 records.
-* Changed data filtering process from python dictionary based to pandas dataframe based to improve speed and shorten code.
-* The older albers projection (EPSG: 102008) abandoned in favor of EPSG: 5070.
-* Generalization of framework to better facilitate multiple users.  Parameters.sqlite replaced with a template (wildlife-wrangler_TEMPLATE.sqlite) that user can build from.  Each user will access a local copy of wildlife-wrangler.sqlite filled out for their needs.
 * Added config file template.  Config file is necessary to avoid sharing your email password when performing large queries of GBIF.
-* Species definitions and filter sets are now documented in output databases.
 * Improved handling of duplicates (see section on duplicates above for info).
-
+* Added section on taxonomy related errors to user's guide.
 
 ## Coming soon
 * Ability to incorporate bird records directly from a copy of the eBird EBD that user has downloaded.
 * Making species level geometry filtering optional if polygon is present in species concepts table.
 * Incorporating GBIF fields "dataGeneralizations", "georeferenceRemarks", and "informationWitheld".
-* Overriding polygon geometry columns in output database is a "footprintWKT" value was provided.
+* Overriding polygon geometry columns in output database if a "footprintWKT" value was provided.
 * Incorporating species definition start and end dates.
 
 ## Inputs
