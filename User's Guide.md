@@ -30,7 +30,7 @@ The user enters species information and unique sets of filtering parameters in t
 [Jupyter Notebook](https://jupyter.org/) document with codes for a species definition and filter parameters sets to use and relevant directories.  When the notebook document is
 run, code that is stored in "wrangler_functions.py" and the notebook document itself retrieves records from GBIF, filters out unsuitable records, creates an output database where suitable records are stored along with documentation and summaries of record attributes before and after filtering, and performs various summaries of data attributes within the notebook document.  Thus, the primary results of running the wrangler are 1) the notebook document with documentation and data summaries and 2) the output (SQLite) database containing suitable records.  
 
-#### Components of the Framework
+#### Key Components of the Framework
 *  __wildlife-wrangler.sqlite__ -- a centralized place to store filtering
    criteria and species definitions.  Saving filter sets (criteria) and species definitions as unique items in a database makes it much easier to explore
    combinations of species definitions and filtering criteria.  For example, if you want to use the same criteria for 20 species, you can call the same criteria each of the 20 times with just the codes.  This setup was chosen with the running of hundreds of queries over time in mind.
@@ -89,3 +89,31 @@ run, code that is stored in "wrangler_functions.py" and the notebook document it
    * How obtained? -- "basisOfRecord", "samplingProtocol", "establishmentMeans",
 
    * Issues, notes, comments -- "issue" or "issues", "locality", "eventRemarks", "locationRemarks", "occurrenceRemarks"
+
+## Important Considerations
+
+#### Taxonomic issues
+When we query species occurrence record databases, we are selecting georeferenced
+records that were selected on the basis of a scientific name or species code.  How
+each species is uniquely defined, it's taxon concept, is a combination of a name,
+rank, and other characteristics, possibly including it's geographic distribution.  
+However, the believed geographic distributions of species have rarely been explicitly
+stated when their concepts were formalized.  That void creates room for errors
+when using occurrence records for studies of species distributions because whereas
+occurrence records link species with locations, there is no information available
+against which to validate those links.  Thus, conditions for errors arise when
+taxonomic changes have occurred within a time period of study, and when taxon names
+and concepts are inconsistently applied, as studies often pull records from
+multiple sources.
+
+More specifically, we highlight three sources of errors.  One, taxonomic changes with
+geographic components, such as lumps and splits that alter the geographic distributions
+implicit in each taxon's concept.  Additionally, geographic areas may merely be
+reallocated among valid concepts ("range reallocation").  Two, missing links between
+taxonomic synonyms, which could be needed across data providers or institutions or
+across taxonomic changes (i.e. time).  Three, when names match, but not concepts
+(circumscriptions), which is termed "homonymy".  We will discuss the cases of
+lumps, splits, range reallocations, and name changes.  The figure below illustrates
+each of these cases.
+
+![Slide 3](T:/Taxonomy/lump-split-reallocate-change.png)
