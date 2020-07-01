@@ -97,23 +97,47 @@ When we query species occurrence record databases, we are selecting georeference
 records that were selected on the basis of a scientific name or species code.  How
 each species is uniquely defined, it's taxon concept, is a combination of a name,
 rank, and other characteristics, possibly including it's geographic distribution.  
-However, the believed geographic distributions of species have rarely been explicitly
-stated when their concepts were formalized.  That void creates room for errors
-when using occurrence records for studies of species distributions because whereas
-occurrence records link species with locations, there is no information available
-against which to validate those links.  Thus, conditions for errors arise when
-taxonomic changes have occurred within a time period of study, and when taxon names
-and concepts are inconsistently applied, as studies often pull records from
+However, the believed geographic distributions of species have rarely been explicitly stated when their concepts were formalized.  That void creates room for errors when using occurrence records for studies of species distributions because whereas occurrence records link species with locations, there is no information available against which to validate those links.  Thus, conditions for errors arise when taxonomic changes have occurred within a time period of study, and when taxon names and concepts are inconsistently applied, as studies often pull records from
 multiple sources.
 
-More specifically, we highlight three sources of errors.  One, taxonomic changes with
-geographic components, such as lumps and splits that alter the geographic distributions
-implicit in each taxon's concept.  Additionally, geographic areas may merely be
-reallocated among valid concepts ("range reallocation").  Two, missing links between
-taxonomic synonyms, which could be needed across data providers or institutions or
-across taxonomic changes (i.e. time).  Three, when names match, but not concepts
-(circumscriptions), which is termed "homonymy".  We will discuss the cases of
-lumps, splits, range reallocations, and name changes.  The figure below illustrates
-each of these cases.
+More specifically, we highlight three sources of errors.  One, taxonomic changes
+with geographic components, such as lumps and splits that alter the geographic
+distributions implicit in each taxon's concept.  Additionally, geographic areas
+may merely be reallocated among valid concepts ("range reallocation").  Two,
+missing links between taxonomic synonyms, which could be needed across data
+providers or institutions or across taxonomic changes (i.e. time).  Three, when
+names match, but not concepts (circumscriptions), which is termed "homonymy".  
+We will discuss the cases of lumps, splits, range reallocations, and name changes.  
+The figure below illustrates each of these cases.
 
-![Slide 3](T:/Taxonomy/lump-split-reallocate-change.png)
+![slide3](Images/slide3.png)
+
+The changes illustrated above can also be illustrated for a time period within
+spatial units (hex grid cells) to show where taxonomic changes occurred.
+
+![slide4](Images/slide4.png)
+
+Errors can arrive when users fail to account for all taxon concepts that were
+involved in taxonomic revisions within a study’s geographic extent or fail to
+account for the geographic ranges implicit in taxon concepts when matching them
+by scientific or common names (cross-referencing).  Those errors can lead to
+the inclusion of inappropriate records, or the omission of appropriate records.
+Including inappropriate records can introduce commission errors into range maps
+and create false omission errors and inflated omission rates during map evaluations.  Omitting appropriate records opens the door for avoidable omission errors in range maps and missed opportunities for validation.  The illustration below shows the conditions when each of those errors can occur while studying species A during time periods one and two.
+
+![slide7](Images/slide7.png)
+
+Homonymy is also capable of generating conditions for the inclusion of inappropriate records, and thus, introduction of commission errors into range maps
+and create false omission errors and inflation of omission rates during map evaluations.
+
+![slide13](Images/slide13.png)
+
+Without strategies for dealing with these potential errors, model quality can
+be hindered to an unknown degree.  We have identified several strategies for
+dealing with the potential errors described here.  One, conduct taxonomically
+broad investigations of taxon concepts.  Perfection would demand accounting for
+all taxon concepts that were involved in taxonomic revisions, not just your
+focal species.  Two, avoid matching taxon concepts with names alone.  Instead, match the concepts and assign concepts unique identifiers.  Exhaustively assess whether taxon concepts, especially geographies, match. Three, make geographies explicit by storing geometries with taxon concepts.  Four, make the life
+spans of concepts explicit by including the start and end dates/years of the time span when concepts were valid.  Five, cross-reference concepts across institutions, and document concept lineages.  Was the concept created out of revision of another concept?  If the concept was invalidated by a revision, what valid concepts resulted?  The wildlife wrangler offers a way to accommodate these strategies by
+including a table for taxon concepts in the wildlife-wrangler.sqlite
+with columns for storing this information.
