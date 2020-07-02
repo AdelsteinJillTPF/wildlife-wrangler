@@ -1,3 +1,5 @@
+# MAJOR UPDATES TO DOCUMENTATION COMING SOON.  SEE dev BRANCH FOR DETAILS.
+
 ## Purpose
 The abundance of wildlife occurrence datasets that are currently accessible can be valuable for efforts such as species distribution modeling and range delineation.  However, the task of downloading and cleaning occurrence records is more complex than it may seem at first consideration given errors and uncertainties in data.  This repository provides a framework for collecting and filtering occurrence data that is widely available through API's.  
 
@@ -50,6 +52,7 @@ This framework is designed to have certain features in order to provide summarie
 
 
 ## Coming soon
+* MAJOR UPDATES TO DOCUMENTATION.  SEE dev BRANCH FOR DETAILS.
 * Ability to incorporate bird records directly from a copy of the eBird EBD that user has downloaded.
 * Making species level geometry filtering optional if polygon is present in species concepts table.
 * Incorporating GBIF fields "dataGeneralizations", "georeferenceRemarks", and "informationWitheld".
