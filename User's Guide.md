@@ -34,8 +34,7 @@ run, code that is stored in "wrangler_functions.py" and the notebook document it
 *  __wildlife-wrangler.sqlite__ -- a centralized place to store filtering
    criteria and species definitions.  Saving filter sets (criteria) and species definitions as unique items in a database makes it much easier to explore
    combinations of species definitions and filtering criteria.  For example, if you want to use the same criteria for 20 species, you can call the same criteria each of the 20 times with just the codes.  This setup was chosen with the running of hundreds of queries over time in mind.
-*  __report.ipynb__ -- this is where you control/run the wrangler.  It's
-   kind of like a beefed-up form and report all in one.  Once you have species definitions and filter sets entered into wildlife-wrangler.sqlite, you can copy report notebook documents to create and run occurrence record queries/requests/downloads.
+*  __report.ipynb__ -- this is where you control/run the wrangler.  It's kind of like a beefed-up form and report all in one.  Once you have species definitions and filter sets entered into wildlife-wrangler.sqlite, you can copy report notebook documents to create and run occurrence record queries/requests/downloads.
 *  __wranglerconfig__ -- this is a text file where you store some personal
    information that you wouldn't want saved in the notebook document: your email
    address and password for your GBIF account, which is needed in order to
@@ -46,23 +45,12 @@ run, code that is stored in "wrangler_functions.py" and the notebook document it
 
 #### Detailed Instructions
 1.  Open your copy of "__widlife-wrangler.sqlite__".  
-2.  In the "__species_concepts__" table, enter in a species definition by
-    entering a unique species code of your choosing in "species_id", the
-    corresponding gbif species id in "gbif_id", "common_name", and "scientific_name".  
-    GBIF species id codes can be retrieved from their website, or with the
-    "getGBIFcode" function available in wildlife_functions.py.  Finally, enter
-    an estimate of the maximum distance from an observer at which a species
-    could be detected with common surveying methods in "detection_distance_meters".  
-    For example, a shrew should have a value close to 0, whereas a wren should
-    have a value closer to 100 m.  All other fields in this table may be
-    helpful, but are not required.
-3.  In the "__gbif_requests__" table, enter a unique code for your filter
-    set in "request_id".  Fill out each field, but note many fields have defaults.  These will be criteria for a first stage of filtering: only records meeting these criteria will be requested from the API.
-4.  In the "__gbif_filters__" table, enter a unique code for your
-    post-request filter set in "fiter_id". Fill out all other fields but note that defaults are present for some fields.  
-5.  Copy "__report_TEMPLATE.ipynb__" to a location outside of the wrangler
-    repo, say to your project directory.  Rename the notebook document to whatever
-    you like.  Using a name with the species code request_id, and filter_id is helpful.
+2.  In the "__species_concepts__" table, enter in a species definition by entering a unique species code of your choosing in "species_id", the
+    corresponding gbif species id in "gbif_id", "common_name", and "scientific_name".  GBIF species id codes can be retrieved from their website, or with the "getGBIFcode" function available in wildlife_functions.py.  Finally, enter an estimate of the maximum distance from an observer at which a species
+    could be detected with common surveying methods in "detection_distance_meters".  For example, a shrew should have a value close to 0, whereas a wren should have a value closer to 100 m.  All other fields in this table may be helpful, but are not required.  
+3.  In the "__gbif_requests__" table, enter a unique code for your filter set in "request_id".  Fill out each field, but note many fields have defaults.    These will be criteria for a first stage of filtering: only records meeting these criteria will be requested from the API.
+4.  In the "__gbif_filters__" table, enter a unique code for your post-request filter set in "fiter_id". Fill out all other fields but note that defaults are present for some fields.  
+5.  Copy "__report_TEMPLATE.ipynb__" to a location outside of the wrangler repo, say to your project directory.  Rename the notebook document to whatever you like.  Using a name with the species code request_id, and filter_id is helpful.
 6.  In conda, activate your wrangler environment.  Open Jupyter Notebook
     and navigate to your renamed copy of "report_TEMPLATE.ipynb".  Fill out
     the first two cells of the notebook document and run it.  Run time can range from
@@ -93,51 +81,26 @@ run, code that is stored in "wrangler_functions.py" and the notebook document it
 ## Important Considerations
 
 #### Taxonomic issues
-When we query species occurrence record databases, we are selecting georeferenced
-records that were selected on the basis of a scientific name or species code.  How
-each species is uniquely defined, it's taxon concept, is a combination of a name,
-rank, and other characteristics, possibly including it's geographic distribution.  
-However, the believed geographic distributions of species have rarely been explicitly stated when their concepts were formalized.  That void creates room for errors when using occurrence records for studies of species distributions because whereas occurrence records link species with locations, there is no information available against which to validate those links.  Thus, conditions for errors arise when taxonomic changes have occurred within a time period of study, and when taxon names and concepts are inconsistently applied, as studies often pull records from
-multiple sources.
+Species are uniquely defined with taxon concepts, which are combinations of name, rank, and other characteristics, possibly including geographic distributions.  These concepts are occasionally revised and sometimes create changes to scientific names and/or the underlying concepts.  Taxonomic changes can pose a challenge for efforts to use occurrence records for spatial analyses because we often approach the data with software and data infrastructures that rely on links between occurrence records and species concepts that may be incomplete or imperfect.
 
-More specifically, we highlight three sources of errors.  One, taxonomic changes
-with geographic components, such as lumps and splits that alter the geographic
-distributions implicit in each taxon's concept.  Additionally, geographic areas
-may merely be reallocated among valid concepts ("range reallocation").  Two,
-missing links between taxonomic synonyms, which could be needed across data
-providers or institutions or across taxonomic changes (i.e. time).  Three, when
-names match, but not concepts (circumscriptions), which is termed "homonymy".  
-We will discuss the cases of lumps, splits, range reallocations, and name changes.  
-The figure below illustrates each of these cases.
+When we query species occurrence record databases, we select georeferenced records on the basis of an attributed scientific name and/or associated species code.  Unfortunately, when names change, appropriate records may then be recorded under multiple names for a range of dates.  Furthermore, the geographic distributions of species have rarely been made explicit when concepts were formalized and beliefs about distributions may change during taxonomic revisions, even when scientific names do not.  If the distributions of taxon concepts are not explicit, then the species names attributed to georeferenced occurrence records from the past cannot be updated accordingly.  Thus, records selected with valid names may be inappropriate and erroneous because they are georeferenced to locations outside of the valid distribution of the concept.
+
+It may not be immediately apparent how it is possible for correctly georeferenced occurrence records to exist outside of a valid range; don't the species' known locations ultimately define the true distribution and thus the valid range?  The answer depends on the species.  Some species may have morphology or behaviors that are so unique as to allow little room for error during a given sampling protocol, in which cases records are reliable indicators of distributions (ranges).  In other cases, it can be difficult to distinguish one species from another that is closely related and geographically adjacent, so species are identified in part based upon beliefs about species range boundaries (e.g. birdwatching).  In the latter, failure to revise species names that are attributed to occurrence records according to changes in the accepted beliefs about the spatial distributions of the similar species generates misidentifications retroactively.     
+
+It is important to be aware of three problematic situations that can arise due to taxonomic changes.  One, changes with geographic components may have occurred, such as lumps or splits that alter the distributions associated with each taxon's concept, or similarly, the reallocation of areas to taxon concepts when names remain valid ("range reallocation").  Such changes will be cryptic when distributions are implicit.  Two, links between taxonomic synonyms may be unavailable.  In some cases, accepted names can differ across data providers or institutions, as well as over time (i.e. taxonomic revisions) even though how the taxa are circumscribed, including geographically, are identical.  Three, names may match when the concepts do not, which is termed "homonymy".  Lumps, splits, range reallocations, and name changes are illustrated below.  The figure illustrates lumps, splits, and reallocations independently, but a single taxonomic revision could create instances of each for a single taxon.  For example, the accepted range of a species could simultaneously be reduced in some areas due to splits or reallocations while be added to others via lumps or reallocations.
 
 ![slide3](Images/slide3.png)
 
-The changes illustrated above can also be illustrated for a time period within
-spatial units (hex grid cells) to show where taxonomic changes occurred.
+The changes illustrated above can also be illustrated for a range of dates within spatial units (hex grid cells) to show where taxonomic changes occurred during a time period.
 
 ![slide4](Images/slide4.png)
 
-Errors can arrive when users fail to account for all taxon concepts that were
-involved in taxonomic revisions within a study’s geographic extent or fail to
-account for the geographic ranges implicit in taxon concepts when matching them
-by scientific or common names (cross-referencing).  Those errors can lead to
-the inclusion of inappropriate records, or the omission of appropriate records.
-Including inappropriate records can introduce commission errors into range maps
-and create false omission errors and inflated omission rates during map evaluations.  Omitting appropriate records opens the door for avoidable omission errors in range maps and missed opportunities for validation.  The illustration below shows the conditions when each of those errors can occur while studying species A during time periods one and two.
+Errors can arise when users fail to account for all the taxon concepts that were involved in taxonomic revisions within a study’s geographic extent or fail to account for the geographic ranges implicit in taxon concepts when matching them by scientific or common names (cross-referencing).  Those errors can lead to the inclusion of inappropriate records and the omission of appropriate records. The inclusion of inappropriate records can introduce commission errors into range maps and create false omission errors and inflated omission rates during map evaluations.  The omission of appropriate records is less problematic as it opens the door for avoidable omission errors in range maps and missed opportunities for validation.  The illustration below shows the conditions when each of those errors can occur.
 
 ![slide7](Images/slide7.png)
 
-Homonymy is also capable of generating conditions for the inclusion of inappropriate records, and thus, introduction of commission errors into range maps
-and create false omission errors and inflation of omission rates during map evaluations.
+Homonymy is also capable of generating conditions for the inclusion of inappropriate records, and thus, commission errors in range maps and false omission errors during map evaluations.
 
 ![slide13](Images/slide13.png)
 
-Without strategies for dealing with these potential errors, model quality can
-be hindered to an unknown degree.  We have identified several strategies for
-dealing with the potential errors described here.  One, conduct taxonomically
-broad investigations of taxon concepts.  Perfection would demand accounting for
-all taxon concepts that were involved in taxonomic revisions, not just your
-focal species.  Two, avoid matching taxon concepts with names alone.  Instead, match the concepts and assign concepts unique identifiers.  Exhaustively assess whether taxon concepts, especially geographies, match. Three, make geographies explicit by storing geometries with taxon concepts.  Four, make the life
-spans of concepts explicit by including the start and end dates/years of the time span when concepts were valid.  Five, cross-reference concepts across institutions, and document concept lineages.  Was the concept created out of revision of another concept?  If the concept was invalidated by a revision, what valid concepts resulted?  The wildlife wrangler offers a way to accommodate these strategies by
-including a table for taxon concepts in the wildlife-wrangler.sqlite
-with columns for storing this information.
+Without strategies for dealing with these potential errors, model quality can be hindered to an unknown degree.  Because the valid geographies of taxon concepts have not been made explicit, users are left to assess whether the errors could affect their work and how to address them when deemed necessary.  Some species may have morphology or behaviors that are so unique as to allow little room for error. Conversely, it can be very difficult to distinguish many species from those that are closely related and geographically adjacent or overlapping.  I have identified several strategies for dealing with the potential errors described here.  One, conduct taxonomically broad investigations of taxon concepts.  Perfect avoidance of errors would demand accounting for all taxon concepts that were involved in taxonomic revisions, not just a focal species.  Two, avoid matching taxon concepts with names alone.  Instead, match the concepts and assign concepts unique identifiers.  Exhaustively assess whether taxon concepts, especially geographies, match. Three, make geographies explicit by storing geometries with taxon concepts.  Four, make the life spans of concepts explicit by including the start and end dates/years of the time span when concepts were valid.  Five, cross-reference concepts across institutions, and document concept lineages.  Was the concept created out of revision of another concept?  If the concept was invalidated by a revision, what valid concepts resulted?  The wildlife wrangler offers a way to accommodate these strategies by including a table for taxon concepts in the wildlife-wrangler.sqlite with columns for storing this information.
