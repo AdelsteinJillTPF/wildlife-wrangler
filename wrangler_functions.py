@@ -456,7 +456,7 @@ def ccw_wkt_from_shp(shapefile, out_txt):
         print("You need to reproject the shapefile to EPSG:4326")
     return
 
-def retrieve_gbif_occurrences(codeDir, species_id, paramdb, spdb,
+def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
                               gbif_req_id, gbif_filter_id, default_coordUncertainty,
                               outDir, summary_name, username, password, email):
     """
@@ -467,7 +467,7 @@ def retrieve_gbif_occurrences(codeDir, species_id, paramdb, spdb,
 
     Arguments:
     codeDir -- directory of this code repo.
-    species_id -- project id for the species concept.
+    taxon_id -- project id for the taxon concept.
     paramdb -- path to the parameter database.
     spdb -- occurrence record database to be created by this function.
     gbif_req_id -- GBIF request ID for the process.
@@ -476,7 +476,7 @@ def retrieve_gbif_occurrences(codeDir, species_id, paramdb, spdb,
         Uncertainty is specified for a record.
     outDir -- where to save maps that are exported by this process.
     summary_name -- a short name for some file names.
-    sp_geometry -- True or False to use geometry saved with species concept when
+    sp_geometry -- True or False to use geometry saved with taxon concept when
         filtering records.  Request geometry is always used if provided.
     """
     sp_geometry = True #  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  NEEDS TO BE IMPLEMENTED
@@ -510,7 +510,7 @@ def retrieve_gbif_occurrences(codeDir, species_id, paramdb, spdb,
 
 
     #############################################################################
-    #                              Species-concept
+    #                              Taxon-concept
     #############################################################################
     os.chdir(codeDir)
     # Get species info from requests database
@@ -518,8 +518,8 @@ def retrieve_gbif_occurrences(codeDir, species_id, paramdb, spdb,
     cursor2 = conn2.cursor()
     sql_tax = """SELECT gbif_id, common_name, scientific_name,
                         detection_distance_meters, gap_id, geometry
-                 FROM species_concepts
-                 WHERE species_id = '{0}';""".format(species_id)
+                 FROM taxa_concepts
+                 WHERE taxon_id = '{0}';""".format(taxon_id)
     concept = cursor2.execute(sql_tax).fetchall()[0]
     gbif_id = concept[0]
     common_name = concept[1]
@@ -533,7 +533,7 @@ def retrieve_gbif_occurrences(codeDir, species_id, paramdb, spdb,
     #####################    Create Occurrence Database    #####################
     ############################################################################
     """
-    Description: Create a database for storing occurrence and species-concept
+    Description: Create a database for storing occurrence and taxon concept
     data.  Needs to have spatial querying functionality.
     """
     makedb1 = datetime.now()
@@ -557,7 +557,7 @@ def retrieve_gbif_occurrences(codeDir, species_id, paramdb, spdb,
             /* Create a table for occurrence records, WITH GEOMETRY */
             CREATE TABLE IF NOT EXISTS occurrences (
                     occ_id INTEGER NOT NULL PRIMARY KEY,
-                    species_id INTEGER NOT NULL,
+                    taxon_id INTEGER NOT NULL,
                     basisOfRecord TEXT,
                     issues TEXT,
                     collectionCode TEXT,
@@ -581,7 +581,7 @@ def retrieve_gbif_occurrences(codeDir, species_id, paramdb, spdb,
                     weight INTEGER DEFAULT 10,
                     weight_notes TEXT,
                     doi_search TEXT,
-                        FOREIGN KEY (species_id) REFERENCES taxa(species_id)
+                        FOREIGN KEY (taxon_id) REFERENCES taxa(taxon_id)
                         ON UPDATE RESTRICT
                         ON DELETE NO ACTION);
 
@@ -1074,7 +1074,7 @@ def retrieve_gbif_occurrences(codeDir, species_id, paramdb, spdb,
 
     # Create any new columns needed
     df8["remarks"] = df8['locality'] + ";" + df8['eventRemarks'] + ";" + df8['locationRemarks'] + ";" + df8['occurrenceRemarks']
-    df8["species_id"] = species_id
+    df8["taxon_id"] = taxon_id
     df8["request_id"] = gbif_req_id
     df8["filter_id"] = gbif_filter_id
     df8["retrievalDate"] = datetime.now()
@@ -1112,7 +1112,7 @@ def retrieve_gbif_occurrences(codeDir, species_id, paramdb, spdb,
     ########################################################################
     biggin = datetime.now()
     '''  # This is an alternate way to insert records
-    sql1 = """INSERT INTO occurrences ('occ_id', 'species_id', 'source',
+    sql1 = """INSERT INTO occurrences ('occ_id', 'taxon_id', 'source',
                                        'latitude', 'longitude',
                                        'coordinateUncertaintyInMeters',
                                        'occurrenceDate', 'request_id',
@@ -1120,7 +1120,7 @@ def retrieve_gbif_occurrences(codeDir, species_id, paramdb, spdb,
                                        'remarks')
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"""
     for x in df9.index:
-        insert2 = [df9.loc[x,"id"], species_id, df9.loc[x,"source"],
+        insert2 = [df9.loc[x,"id"], taxon_id, df9.loc[x,"source"],
                    df9.loc[x,"decimalLatitude"], df9.loc[x,"decimalLongitude"],
                    df9.loc[x,"coordinateUncertaintyInMeters"],
                    df9.loc[x,"eventDate"], request_id, filter_id,
@@ -1187,7 +1187,7 @@ def retrieve_gbif_occurrences(codeDir, species_id, paramdb, spdb,
     # Buffer the x,y locations with the coordinate uncertainty
     # in order to create circles.  Create versions in albers and wgs84.  The
     # wgs84 version will be used in plotting with Basemap.  Buffer radius is
-    # the sum of detectiondistance from requests.species_concepts and
+    # the sum of detectiondistance from requests.taxa_concepts and
     # coordinate uncertainty in meters here.
     buffertime1 = datetime.now()
     sql_det = """
