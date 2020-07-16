@@ -67,6 +67,7 @@ On a per-species, per-query basis
 * Notebook documents that describe decisions made and the data acquired.
 
 ## Constraints
+* Currently only works on PC.  
 * Queries returning > 5,000,000 records may fail.
 * Setup of spatialite can be difficult.
 * Thorough and accurate specification of taxa concepts is difficult and very time-consuming.

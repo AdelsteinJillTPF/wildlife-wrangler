@@ -1,4 +1,4 @@
-## Installation
+## Installation on PC
 1.  Use [Git](https://git-scm.com/) to clone the master repo from github to your computer.
 2.  Build a [Conda](https://docs.conda.io/projects/conda/en/latest/index.html) environment. Running the following lines of code (individually) in a conda shell should create a suitable environment named "wrangler":
     a. "conda create -n wrangler python=3.6 pandas jupyter basemap-data-hires notebook numpy shapely"
@@ -28,7 +28,7 @@ The user enters species information and unique sets of filtering parameters in t
 #### Key Components of the Framework
 *  __wildlife-wrangler.sqlite__ -- a centralized place to store filtering criteria and species definitions.  Saving filter sets (criteria) and taxa concepts as unique items in a database makes it much easier to explore combinations of species definitions and filtering criteria.  For example, if you want to use the same criteria for 20 species, you can call the same criteria each of the 20 times with just the codes.  This setup was chosen with the running of hundreds of queries over time in mind.
 *  __report.ipynb__ -- this is where you control/run the wrangler.  It's kind of like a beefed-up form and report all in one.  Once you have species definitions and filter sets entered into wildlife-wrangler.sqlite, you can copy report notebook documents to create and run occurrence record queries/requests/downloads.
-*  __wranglerconfig__ -- this is a text file where you store some personal information that you wouldn't want saved in the notebook document: your email address and password for your GBIF account, which is needed in order to requests large downloads from GBIF.
+*  __wranglerconfig.py__ -- this is a .py file where you store some personal information that you wouldn't want saved in the notebook document: your email address and password for your GBIF account, which is needed in order to requests large downloads from GBIF.
 *  __wrangler_functions.py__ -- a python module containing the meat and and potatoes functions of the wrangler.  DO NOT CHANGE!  Much of the necessary code is kept here to avoid having a thousand lines of code in the report.ipynb.  You can call some functions from this by importing the module in ipython (i.e., "import wrangler_functions as wranglers").  That can be handy for using the "getGBIFcode" function.
 
 #### Detailed Instructions

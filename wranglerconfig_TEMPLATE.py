@@ -10,6 +10,6 @@ gbif_email = ""
 gbif_password = ""
 
 # Paths
-workDir = ""'    # Path to the working directory; be sure to create folders named "Inputs" and "Outputs" here.
-codeDir = '""   # Path to your copy of the wildlife-wrangler repo.
+workDir = ""    # Path to the working directory; be sure to create folders named "Inputs" and "Outputs" here.
+codeDir = ""   # Path to your copy of the wildlife-wrangler repo.
 paramdb = ""   # Path to your copy of the wildlife-wrangler.sqlite database.
