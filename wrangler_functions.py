@@ -33,7 +33,8 @@ def MapShapefilePolygons(map_these, title):
     from matplotlib.patches import Polygon
     from matplotlib.collections import PatchCollection
     from matplotlib.patches import PathPatch
-
+    print("Future matplotlib and basemap updates will resolve the following"
+            " deprecation warnings.")
     # Basemap
     fig = plt.figure(figsize=(15,12))
     ax = plt.subplot(1,1,1)

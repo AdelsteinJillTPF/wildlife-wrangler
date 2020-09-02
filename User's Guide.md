@@ -1,7 +1,7 @@
 ## Installation
 1.  Use [Git](https://git-scm.com/) to clone the master repo from github to your computer.
 2.  Build a [Conda](https://docs.conda.io/projects/conda/en/latest/index.html) environment. Running the following lines of code (individually) in a conda shell should create a suitable environment named "wrangler":
-    a. "conda create -n wrangler python=3.6 pandas jupyter basemap-data-hires notebook numpy shapely"
+    a. "conda create -n wrangler python=3.6 pandas jupyter basemap-data-hires notebook numpy shapely matplotlib=3.2.2"
     b. "conda activate wrangler"
     c. "pip install pygbif python-dwca-reader sciencebasepy"
 3.  Install [Spatialite](https://www.gaia-gis.it/fossil/libspatialite/index).  Spatialite is a spatial extension for [SQLite](https://www.sqlite.org/index.html).  
@@ -10,7 +10,7 @@
     delete "TEMPLATE" from the copied file's name ("wildlife-wrangler.sqlite").
 5.  Copy the wranglerconfig_TEMPLATE.txt file to your computer and delete
     "TEMPLATE" from the copied file's name ("wranglerconfig.txt").  Fill out
-    this file.  Be sure to create a folders named "Input" and "Output"
+    this file.  Create a folders named "Input" and "Output"
     within your designated working directory ("workDir").  Use "/" at the
     end of paths (i.e. "C:/Data/").
 6.  Set up an account on GBIF.org and enter your credentials into
