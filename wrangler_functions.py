@@ -27,14 +27,15 @@ def MapShapefilePolygons(map_these, title):
     title -- title for the map.
     """
     # Packages needed for plotting
+    import warnings
+    warnings.filterwarnings('ignore')
     import matplotlib.pyplot as plt
     from mpl_toolkits.basemap import Basemap
     import numpy as np
     from matplotlib.patches import Polygon
     from matplotlib.collections import PatchCollection
     from matplotlib.patches import PathPatch
-    print("Future matplotlib and basemap updates will resolve the following"
-            " deprecation warnings.")
+    
     # Basemap
     fig = plt.figure(figsize=(15,12))
     ax = plt.subplot(1,1,1)
