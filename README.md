@@ -57,9 +57,9 @@ This framework is designed to have certain features that provide summaries that 
 * Incorporating tools for navigating taxa concept matching and assessment.
 
 ## Inputs
-Data is gathered from catalogs and databases via API's, so there are few inputs.  However, the 'wildlife-wrangler.sqlite' database is needed, which includes tables for taxon definitions, data request parameters, and post-request filtering criteria.
+Data is gathered from catalogs and databases via API's, so there are few inputs.  However, the 'wildlife-wrangler.sqlite' database is needed, which includes tables for taxa definitions, data request parameters, and post-request filtering criteria.
 
-GBIF is currently the only dataset currently used but others can/will be added later including eBird.
+GBIF is currently the only dataset currently used but others can/will be added in the future, including eBird.
 
 ## Outputs
 On a per-species, per-query basis
@@ -70,7 +70,6 @@ On a per-species, per-query basis
 * Currently only works on PC.  
 * Queries returning > 5,000,000 records may fail.
 * Setup of spatialite can be difficult.
-* Thorough and accurate specification of taxa concepts is difficult and very time-consuming.
 * Processing speed is limited in some cases by lack of spatial indexing, because setup of spatialite with spatial indexing enabled is very difficult.
 
 ## Dependencies
