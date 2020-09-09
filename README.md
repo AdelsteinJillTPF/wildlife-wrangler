@@ -50,12 +50,11 @@ This framework is designed to have certain features that provide summaries that 
 * Added section on taxonomy related errors to user's guide.
 
 ## Coming soon
-* MAJOR UPDATES TO DOCUMENTATION.  SEE dev BRANCH FOR DETAILS.
 * Ability to incorporate bird records directly from a copy of the eBird EBD that user has downloaded.
 * Making species level geometry filtering optional if polygon is present in taxa concepts table.
 * Incorporating GBIF fields "dataGeneralizations", "georeferenceRemarks", and "informationWitheld".
 * Overriding polygon geometry columns in output database if a "footprintWKT" value was provided.
-* Incorporating species definition start and end dates.
+* Incorporating tools for navigating taxa concept matching and assessment.
 
 ## Inputs
 Data is gathered from catalogs and databases via API's, so there are few inputs.  However, the 'wildlife-wrangler.sqlite' database is needed, which includes tables for taxon definitions, data request parameters, and post-request filtering criteria.
