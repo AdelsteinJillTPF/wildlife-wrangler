@@ -11,6 +11,9 @@ If you have direct contributions you would like considered for incorporation
 into the project you can [fork this repository][2] and
 [submit a pull request][3] for review.
 
+At this time, the greatest contribution you can make is to install and
+give feedback to the maintainer.
+
 
 [1]: https://code.usgs.gov/sas/wildlife-wrangler/issues
 [2]: https://code.usgs.gov/sas/articles/fork-a-repo/
