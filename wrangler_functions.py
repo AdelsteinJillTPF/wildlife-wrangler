@@ -376,7 +376,7 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
     sp_geometry -- True or False to use geometry saved with taxon concept when
         filtering records.  Request geometry is always used if provided.
     """
-    sp_geometry = True #  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  NEEDS TO BE IMPLEMENTED
+    sp_geometry = True
     import pandas as pd
     pd.set_option('display.width', 1000)
     import sqlite3
@@ -550,7 +550,7 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
         poly_intersection = filter_polygon.intersection(sp_polygon)
         poly = shapely.wkt.dumps(poly_intersection)
 
-    ###################  RETRIEVE POST-REQUEST FILTER PARAMTERS
+    ###################  RETRIEVE POST-REQUEST FILTER PARAMETERS
     filt_coordUncertainty = get_filter('has_coordinate_uncertainty',
                                        gbif_filter_id, 'gbif_filters')
     filt_maxcoord = get_filter('max_coordinate_uncertainty', gbif_filter_id,
