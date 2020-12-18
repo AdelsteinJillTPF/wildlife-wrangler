@@ -134,24 +134,25 @@ def drop_duplicates_latlongdate(df):
     of records with a mix of decimal precision in latitude and longitude
     values. The process is a little complex.
 
-    The first df is cleaned up by dropping duplicates based on which
-    record has greater individual count.  Before doing that, records with unequal
-    decimal precision in the lat and long fields and those fields are truncated
-    to the shorter precision present.
+    The first data frame is cleaned up by dropping duplicates based on which
+    record has greater individual count.  Before doing that, it finds records
+    with unequal decimal precision in the lat and long fields and those fields
+    are truncated to the shorter precision present.
 
-    An input df likely contains records with equal decimal precision in lat and
-    long fields, but that is lower than the rest (i.e. lat and long have 3 places
+    An input data frame likely contains records with equal decimal precision in lat and
+    long fields, but that is lower than the rest (i.e., lat and long have 3 places
     right of the decimal whereas most records have 4).  Duplication may occur
     between lower and higher precision records at the lower precision.  Therefore,
     duplication must be assessed at each of the lower precision levels present.
-    The strategy for that is to, at each precision level, split the main df in two:
-    one with records having the precision level of the investigation and another
-    with records greater than the precision level. The "greater than" df records'
-    lat and long values are then truncated to the precision level.  Records are
-    identified from the "equals precision" df that have their lat, long, and date
-    values represented in the "greater than" df, and such records id's are
-    collected in a list of records to remove from the input/main df.  This process
-    is iterated over all precision levels present in the data.
+    The strategy for that is to, at each precision level, split the main data frame
+    in two: one with records having the precision level of the investigation and
+    another with records greater than the precision level. The "greater than"
+    data frame records' lat and long values are then truncated to the precision
+    level.  Records are identified from the "equals precision" data frame that
+    have their lat, long, and date values represented in the "greater than"
+    data frame, and such records id's are collected in a list of records to
+    remove from the input/main data frame.  This process is iterated over all
+    precision levels present in the data.
 
     Parameters
     ----------
@@ -357,10 +358,9 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
                               gbif_req_id, gbif_filter_id, default_coordUncertainty,
                               outDir, summary_name, username, password, email):
     """
-    Retrieves GAP range from ScienceBase and occurrence records from APIs. Filters
-    occurrence records, stores them in a database, buffers the xy points,
-    and filtering occurrence records, saving them in a database.  Finally, exports
-    some maps.
+    Retrieves occurrence records from the GBIF.  Filters occurrence records,
+    stores them in a database, buffers the xy points, and filtering occurrence
+    records, saving them in a database.  Finally, exports some maps.
 
     Arguments:
     codeDir -- directory of this code repo.
@@ -380,7 +380,6 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
     import pandas as pd
     pd.set_option('display.width', 1000)
     import sqlite3
-    import sciencebasepy
     from pygbif import occurrences
     import os
     os.chdir('/')
@@ -600,8 +599,8 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
     #######################      Get GBIF Records      #########################
     ############################################################################
     """
-    Retrieve GBIF records for a species and save appropriate
-    attributes in the occurrence db.
+    Retrieve GBIF records for a species and save appropriate attributes in the
+    occurrence database.
     """
     ####################################### HOW MANY RECORDS EXIST TO PULL FROM?
     ############################################################################
