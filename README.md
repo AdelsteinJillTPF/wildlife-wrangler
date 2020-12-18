@@ -26,7 +26,7 @@ This framework is designed to have certain features that provide summaries that 
 
 * __Spatial filtering__ -- Queries can be limited to within geometries (polygons), and spatial restrictions can be assigned to species definitions (i.e., extent of occurrence polygon).  The user can also specify a continent and/or country within which to return records.
 
-* __Source filtering__ -- Global Biodiversity Information Facility (GBIF, https://gbif.org) aggregates records from many datasets, collections, and institutions.  The user can specify collections and institutions to omit.  
+* __Source filtering__ -- Global Biodiversity Information Facility ([GBIF](https://gbif.org)) aggregates records from many datasets, collections, and institutions.  The user can specify collections and institutions to omit.  
 
 * __Duplicate handling__ -- Queries commonly include duplicates based on the latitude, longitude, and eventDate fields.  The user can opt to keep or exclude duplicates.  If they choose to exclude them, a multi-step process is triggered to account for two major issues.  One, the values of latitude and longitude for a record may have different numbers of digits to the right of the decimal (i.e., lat has eight decimals and lon has six).  Two, not all records have the same number of digits to the right of the decimal for latitude and longitude (i.e., one record may have two for lat and long while another has 12).  The process used is as follows: 1) latitude and longitude values of each record are truncated to the shorter of the two in cases where they differ, 2) if duplicates occur after that step, then the one with the largest individual count is kept, or the first if individual counts are the same, 3) records are identified that are a duplicate of a record with higher precision (e.g. (10.123, -10.123) would be flagged as a duplicate of (10.1234, -10.1234)) and then 4) they are removed.
 
@@ -52,7 +52,7 @@ This framework is designed to have certain features that provide summaries that 
 * Improved handling of duplicates (see Duplicate handling sections above for more information).
 
 ## Coming soon
-* Ability to incorporate bird records directly from a copy of the eBird Basic Dataset (EBD, https://ebird.org/about/download-ebird-data-products) that the user has downloaded.  The eBird Observational Dataset (EOD, https://ebird.org/about/download-ebird-data-products) is available through GBIF, but that dataset does not include some valuable information that is available in the EBD.
+* Ability to incorporate bird records directly from a copy of the eBird Basic Dataset ([EBD](https://ebird.org/about/download-ebird-data-products)) that the user has downloaded.  The eBird Observational Dataset ([EOD](https://ebird.org/about/download-ebird-data-products)) is available through GBIF, but that dataset does not include some valuable information that is available in the EBD.
 * Making species level geometry filtering optional if polygon is present in taxa concepts table.
 * Incorporating GBIF fields "dataGeneralizations", "georeferenceRemarks", and "informationWitheld".
 * Overriding polygon geometry columns in output database if a "footprintWKT" value was provided.
