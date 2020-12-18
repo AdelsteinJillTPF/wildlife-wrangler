@@ -2,8 +2,8 @@
 
 # GBIF credentials
 '''
-These credentials are used for large downloads.  There is no other way. 
-You must first set up an account at GBIF's website.  The email address is the one that you provide them.
+These credentials are used for large downloads.  You must first set up an
+account at GBIF.org.  The email address is the one that you provide them.
 '''
 gbif_username = ""
 gbif_email = ""

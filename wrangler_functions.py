@@ -1,4 +1,4 @@
-def MapShapefilePolygons(map_these, title):
+summarytimedef MapShapefilePolygons(map_these, title):
     """
     Displays shapefiles on a simple CONUS basemap.  Maps are plotted in the order
     provided so put the top map last in the list.  You can specify a column
@@ -12,7 +12,7 @@ def MapShapefilePolygons(map_these, title):
     Arguments:
     map_these -- list of dictionaries for shapefiles you want to display in
                 CONUS. Each dictionary should have the following format, but
-                some are unneccesary if 'column' doesn't = 'None'.  The critical
+                some are unnecessary if 'column' doesn't = 'None'.  The critical
                 ones are file, column, and drawbounds.  Column_colors is needed
                 if column isn't 'None'.  Others are needed if it is 'None'.
                     {'file': '/path/to/your/shapfile',
@@ -109,7 +109,7 @@ def getGBIFcode(name, rank='species'):
     """
     Returns the GBIF species code for a scientific name.
 
-    Example: gbifcode = getGBIFcode(name = "Dendroica ceruleans")
+    Example: gbifcode = getGBIFcode(name = "Dendroica cerulea")
     """
     from pygbif import species
     key = species.name_backbone(name = name, rank='species')['usageKey']
@@ -129,30 +129,28 @@ def drop_duplicates_latlongdate(df):
     '''
     Function to find and remove duplicate occurrence records within the
     wildlife wrangler workflow.  When duplicates exist, the record with the
-    higher decimal precision is kept, and if precisions are equal, then the
+    higher decimal precision is kept, and if precision values are equal, then the
     record with the higher individualCount is retained. Accounts for existence
     of records with a mix of decimal precision in latitude and longitude
-    values. The process is a little complex.
-
-    The first data frame is cleaned up by dropping duplicates based on which
-    record has greater individual count.  Before doing that, it finds records
-    with unequal decimal precision in the lat and long fields and those fields
-    are truncated to the shorter precision present.
-
-    An input data frame likely contains records with equal decimal precision in lat and
-    long fields, but that is lower than the rest (i.e., lat and long have 3 places
-    right of the decimal whereas most records have 4).  Duplication may occur
-    between lower and higher precision records at the lower precision.  Therefore,
-    duplication must be assessed at each of the lower precision levels present.
-    The strategy for that is to, at each precision level, split the main data frame
-    in two: one with records having the precision level of the investigation and
-    another with records greater than the precision level. The "greater than"
-    data frame records' lat and long values are then truncated to the precision
-    level.  Records are identified from the "equals precision" data frame that
-    have their lat, long, and date values represented in the "greater than"
-    data frame, and such records id's are collected in a list of records to
-    remove from the input/main data frame.  This process is iterated over all
-    precision levels present in the data.
+    values. The process is a little complex.   The first data frame is cleaned
+    up by dropping duplicates based on which record has greater individual count.
+    Before doing that, records with unequal decimal precision in the latitude
+    and longitude fields and those fields are truncated to the shorter precision
+    present. An input data frame likely contains records with equal decimal
+    precision in latitude and longitude fields, but that is lower than the rest
+    (i.e. latitude and longitude have 3 places right of the decimal whereas most
+    records have 4).  Duplication may occur between lower and higher precision
+    records at the lower precision.  Therefore, duplication must be assessed at
+    each of the lower precision levels present. The strategy for that is to, at
+    each precision level, split the main data frame in two: one with records
+    having the precision level of the investigation and another with records
+    greater than the precision level. The "greater than" data frame records'
+    latitude and longitude values are then truncated to the precision level.
+    Records are identified from the "equals precision" data frame that have
+    their latitude, longitude, and date values represented in the "greater than"
+    df, and such records ID’s are collected in a list of records to be removed
+    from the input/main data frame.  This process is iterated over all precision
+    levels present in the data.
 
     Parameters
     ----------
@@ -173,10 +171,10 @@ def drop_duplicates_latlongdate(df):
 
     """
     ############ RECTIFY UNEQUAL LAT-LONG PRECISION
-    First, trim decimal length in cases where demical length differs between
-    lat and long, result is equal lat and long length.  Record the trimmed
-    decimal precision in a temp column for use later as a record to "native"
-    precision.
+    First, trim decimal length in cases where decimal length differs between
+    latitude and longitude values, result is equal latitude and longitude
+    length.  Record the trimmed decimal precision in a temp column for use later
+    as a record to "native" precision.
     """
     df['dup_latPlaces'] = [len(x.split(".")[1]) for x in df['latitude']]
     df['dup_lonPlaces'] = [len(x.split(".")[1]) for x in df['longitude']]
@@ -198,7 +196,7 @@ def drop_duplicates_latlongdate(df):
     ########  INITIAL DROP OF DUPLICATES
     Initial drop of duplicates on 'latitude', 'longitude', 'occurrenceDate',
     keeping the first (highest individual count)
-    Sort so that the highest individual count is first ############ ADD OCCURRENCEDATE BACK IN
+    Sort so that the highest individual count is first ## ADD OCCURRENCEDATE BACK IN
     """
     df.sort_values(by=['latitude', 'longitude', 'occurrenceDate',
                         'individualCount'],
@@ -231,8 +229,8 @@ def drop_duplicates_latlongdate(df):
 
         Parameters
         ----------
-        precision : The level of precision (places right of decimal) in lat and long
-                     for the assessment of duplicates.
+        precision : The level of precision (places right of decimal) in latitude
+        and longitude values for the assessment of duplicates.
         df : dataframe to assess and drop duplicates from.  This function works
               'inplace'.
         """
@@ -247,7 +245,7 @@ def drop_duplicates_latlongdate(df):
         # investigated
         dfShorter1 = df[df['dup_OGprec'] == precision]
 
-        # Find records in dfShorter1 with lat, lon, date combo
+        # Find records in dfShorter1 with latitude, longitude, date combo
         # existing in dfLonger and append to list of duplis
         dfduplis = pd.merge(dfShorter1, dfLonger, how='inner',
                             on=['latitude', 'longitude', 'occurrenceDate'])
@@ -255,7 +253,7 @@ def drop_duplicates_latlongdate(df):
         for d in dups_ids:
             duplis.append(d)
 
-    # Drop lat long duplicates at lower decimal precisions
+    # Drop latitude longitude duplicates at lower decimal precisions
     for p in precisions:
         drop_duplicates(p, df)
 
@@ -358,13 +356,13 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
                               gbif_req_id, gbif_filter_id, default_coordUncertainty,
                               outDir, summary_name, username, password, email):
     """
-    Retrieves occurrence records from the GBIF.  Filters occurrence records,
-    stores them in a database, buffers the xy points, and filtering occurrence
-    records, saving them in a database.  Finally, exports some maps.
+    Retrieves species occurrence records from the GBIF API.  Filters occurrence
+    records, buffers the xy points, and saves them in a database.  Finally,
+    exports some Shapefiles.
 
     Arguments:
     codeDir -- directory of this code repo.
-    taxon_id -- project id for the taxon concept.
+    taxon_id -- project-specific identifier for the taxon concept.
     paramdb -- path to the parameter database.
     spdb -- occurrence record database to be created by this function.
     gbif_req_id -- GBIF request ID for the process.
@@ -375,6 +373,7 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
     summary_name -- a short name for some file names.
     sp_geometry -- True or False to use geometry saved with taxon concept when
         filtering records.  Request geometry is always used if provided.
+        NOTE: This option is forthcoming and is currently hard-coded to "True".
     """
     sp_geometry = True
     import pandas as pd
@@ -396,9 +395,10 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
     # Environment variables need to be handled
     if platform.system() == 'Windows':
         os.environ['PATH'] = os.environ['PATH'] + ';' + 'C:/Spatialite'
-        os.environ['SPATIALITE_SECURITY'] = 'relaxed'# DOES THIS NEED TO BE RUN BEFORE EVERY CONNECTION????? ?NOT WORKING  ???????????
+        os.environ['SPATIALITE_SECURITY'] = 'relaxed'
 
-    if platform.system() == 'Darwin':  # DOES THIS NEED TO BE RUN BEFORE EVERY CONNECTION?????????????????
+    if platform.system() == 'Darwin':
+        print("Support for Darwin operating systems is forthcoming")
         #os.putenv('SPATIALITE_SECURITY', 'relaxed')
         os.environ['SPATIALITE_SECURITY'] = 'relaxed'
 
@@ -675,8 +675,8 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
 
         ############################  SUMMARY TABLE OF KEYS/FIELDS RETURNED (SMALL)
         ########################################################################
-        # Count entries per atrribute(column), reformat as new df with appropriate
-        # columns.  Finally, insert into db.
+        # Count entries per attribute(column), reformat as new df with appropriate
+        # columns.  Finally, insert into database.
         # NOTE: When pulling from df0copy, only a specified subset of keys are
         # assessed (keeper_keys).  For a more complete picture, alloccs must be
         # assessed.  That has historically been very slow.
@@ -809,7 +809,7 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
         ############################  SUMMARY TABLE OF KEYS/FIELDS RETURNED (big)
         ########################################################################
         # Count entries per atrribute(column), reformat as new df with appropriate
-        # columns.  Finally, insert into db.
+        # columns.  Finally, insert into database.
         feather = datetime.now()
         df_populated1 = pd.DataFrame(dfRaw.count(axis=0).T.iloc[1:])
         df_populated1['included(n)'] = len(dfRaw)
@@ -819,13 +819,16 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
         df_populated2.to_sql(name='gbif_fields_returned', con=conn, if_exists='replace')
         print("Summarized fields returned: " + str(datetime.now() - feather))
 
-    ############################################# eBird would go here????/
+    ################################################# BRING IN NON-GBIF DATA
     ########################################################################
+    """
+    This functionality is forthcoming.
+    """
 
     ############################################# SUMMARY OF VALUES RETURNED
     ########################################################################
     # Create a table for storing unique attribute values that came back.
-    breadtime = datetime.now()
+    summarytime = datetime.now()
     summary = {'datums': ['WGS84'],
                'issues': set([]),
                'bases': [],
@@ -1080,7 +1083,7 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
 
     #############################################################  BUFFER POINTS
     ############################################################################
-    # Buffer the x,y locations with the coordinate uncertainty
+    # Buffer the xy points with the coordinate uncertainty
     # in order to create circles.  Create versions in albers and wgs84.  The
     # wgs84 version will be used in plotting with Basemap.  Buffer radius is
     # the sum of detectiondistance from requests.taxa_concepts and
