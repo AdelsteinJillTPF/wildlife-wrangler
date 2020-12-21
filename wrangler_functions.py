@@ -1,4 +1,4 @@
-summarytimedef MapShapefilePolygons(map_these, title):
+def MapShapefilePolygons(map_these, title):
     """
     Displays shapefiles on a simple CONUS basemap.  Maps are plotted in the order
     provided so put the top map last in the list.  You can specify a column
@@ -413,7 +413,7 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
     conn2 = sqlite3.connect(paramdb, isolation_level='DEFERRED')
     cursor2 = conn2.cursor()
     sql_tax = """SELECT gbif_id, common_name, scientific_name,
-                        detection_distance_meters, gap_id, geometry
+                        detection_distance_meters, geometry
                  FROM taxa_concepts
                  WHERE taxon_id = '{0}';""".format(taxon_id)
     concept = cursor2.execute(sql_tax).fetchall()[0]
@@ -421,7 +421,6 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
     common_name = concept[1]
     scientific_name = concept[2]
     det_dist = concept[3]
-    gap_id = concept[4]
     sp_geom =concept[5]
 
 
