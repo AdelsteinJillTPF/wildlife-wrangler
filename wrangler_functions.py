@@ -375,7 +375,6 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
         filtering records.  Request geometry is always used if provided.
         NOTE: This option is forthcoming and is currently hard-coded to "True".
     """
-    sp_geometry = True
     import pandas as pd
     pd.set_option('display.width', 1000)
     import sqlite3
@@ -392,6 +391,7 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
     from dwca.read import DwCAReader
     import numpy as np
 
+    sp_geometry=True
     # Environment variables need to be handled
     if platform.system() == 'Windows':
         os.environ['PATH'] = os.environ['PATH'] + ';' + 'C:/Spatialite'
@@ -421,7 +421,7 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
     common_name = concept[1]
     scientific_name = concept[2]
     det_dist = concept[3]
-    sp_geom =concept[5]
+    sp_geom =concept[4]
 
 
     ############################################################################
@@ -921,7 +921,7 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
             frog = """INSERT INTO pre_filter_value_counts (attribute, value, count)
                       VALUES ("{0}", "{1}", "{2}")""".format(x,y,z)
             cursor.execute(frog)
-    print("Created summary table of request results: " + str(datetime.now() - breadtime))
+    print("Created summary table of request results: " + str(datetime.now() - summarytime))
 
 
     ##########################################  SUMMARIZE SOURCES PRE FILTER
