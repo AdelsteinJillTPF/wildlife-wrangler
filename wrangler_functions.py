@@ -779,7 +779,7 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
                 print("Download complete: " + str(datetime.now() - bigdown1))
             except:
                 wait = datetime.now() - waitstart
-                if wait.seconds > 60*15:
+                if wait.seconds > 60*20:
                     gotit = 0
                     print("TIMED OUT -- attempting to proceed anyways")
                 else:
