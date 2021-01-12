@@ -771,13 +771,19 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
         # to change the file name, unzip the file, etc.
         print("Downloading Darwin Core Archive zip file for this species .....")
         gotit = None
+        waitstart = datetime.now()
         while gotit is None:
             try:
                 zipdownload = occurrences.download_get(key=dkey, path=outDir)
                 gotit = 1
+                print("Download complete: " + str(datetime.now() - bigdown1))
             except:
-                pass
-        print("Download complete: " + str(datetime.now() - bigdown1))
+                wait = datetime.now() - waitstart
+                if wait.seconds > 60*15:
+                    gotit = 0
+                    print("TIMED OUT -- attempting to proceed anyways")
+                else:
+                    gotit = None
 
         # Read the "occurrence.txt" file into a Pandas dataframe
         read1 = datetime.now()
