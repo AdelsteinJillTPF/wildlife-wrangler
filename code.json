@@ -8,22 +8,33 @@
 		"usageType": "openSource",
 		"licenses": [{
 			"name": "Public Domain, CC0-1.0",
-			"URL": "https://github.com/usgs/REPOSITORY_NAME/blob/master/LICENSE.md"
+			"URL": "https://github.com/usgs/wildlife-wrangler/blob/master/LICENSE.md"
 		}]
 	},
-	"homepageURL": "https://usgs.github.io/REPOSITORY_NAME/",
-	"downloadURL": "https://github.com/usgs/REPOSITORY_NAME/archive/master.zip",
-	"disclaimerURL": "https://github.com/usgs/REPOSITORY_NAME/blob/master/LICENSE.md",
-	"repositoryURL": "https://github.com/usgs/REPOSITORY_NAME.git",
+	"homepageURL": "https://usgs.github.io/wildlife-wrangler/",
+	"downloadURL": "https://github.com/usgs/wildlife-wrangler/archive/master.zip",
+	"disclaimerURL": "https://github.com/usgs/wildlife-wrangler/blob/master/LICENSE.md",
+	"repositoryURL": "https://github.com/usgs/wildlife-wrangler.git",
 	"vcs": "git",
 	"laborHours": 0,
-	"tags": ["wildlife", "species distribution models", "range maps", "GBIF", "species occurrence records"],
+	"tags": [
+		"USGS",
+		"Core Science Systems",
+		"Science Analytics and Synthesis",
+		"North Carolina State University",
+		"USGS North Carolina Cooperative Fish and Wildlife Research Unit",
+		"wildlife",
+		"species distribution models",
+		"range maps",
+		"GBIF",
+		"species occurrence records",
+		"doi|https://doi.org/XXXXX"],
 	"languages": ["Python", "The Jupyter Notebook", "SQL"],
 	"contact": {
 		"name": "Nathan M. Tarr",
 		"email": "nmtarr@ncsu.edu"
 	},
 	"date": {
-		"metadataLastUpdated": "YYYY-MM-DD"
+		"metadataLastUpdated": "2021-01-14"
 	}
 }]
