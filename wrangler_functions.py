@@ -354,7 +354,8 @@ def ccw_wkt_from_shp(shapefile, out_txt):
 
 def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
                               gbif_req_id, gbif_filter_id, default_coordUncertainty,
-                              outDir, summary_name, username, password, email):
+                              outDir, summary_name, username, password, email,
+                              dwca_download=True):
     """
     Retrieves species occurrence records from the GBIF API.  Filters occurrence
     records, buffers the xy points, and saves them in a database.  Finally,
@@ -374,6 +375,10 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
     sp_geometry -- True or False to use geometry saved with taxon concept when
         filtering records.  Request geometry is always used if provided.
         NOTE: This option is forthcoming and is currently hard-coded to "True".
+    dwca_download -- True or False.  False uses the API, which only works when there are
+        fewer than a few 100,000 records.  True uses the download method involving
+        your GBIF account and email.  Default is True.  Note: False does not
+        provide a download DOI.
     """
     import pandas as pd
     pd.set_option('display.width', 1000)
@@ -618,9 +623,9 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
 
 
     ############################################################################
-    #                         < 100,000 RECORDS (small)
+    #                           API DOWNLOAD OPTION
     ############################################################################
-    if occ_count <100000:
+    if dwca_download == False:
         # Get occurrences in batches, saving into master list
         alloccs = []
         batches = range(0, occ_count, 300)
@@ -722,9 +727,9 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
         dfK.to_sql(name='gbif_fields_returned', con=conn, if_exists='replace')
 
     ############################################################################
-    #                         > 100,000 RECORDS (big)
+    #                   DARWIN CORE ARCHIVE METHOD (email of .zip)
     ############################################################################
-    else:
+    if dwca_download == True:
         ########################################################## DOWNLOAD (big)
         ########################################################################
         # Make the data request using the download function.  Results are
@@ -785,10 +790,13 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
                 else:
                     gotit = None
 
-        # Read the "occurrence.txt" file into a Pandas dataframe
+        # Read the relevant files from within the darwin core archive
         read1 = datetime.now()
         with DwCAReader(outDir + dkey + '.zip') as dwca:
-            dfRaw = dwca.pd_read('occurrence.txt', low_memory=False)#, usecols=keeper_keys)
+            dfRaw = dwca.pd_read('occurrence.txt', low_memory=False)
+            citations = dwca.open_included_file('citations.txt').read()
+            rights = dwca.open_included_file('rights.txt').read()
+            doi = dwca.metadata.attrib["packageId"]
 
         df0 = dfRaw.filter(items=keeper_keys, axis=1)
 
