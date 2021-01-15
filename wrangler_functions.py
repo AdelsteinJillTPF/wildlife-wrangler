@@ -480,7 +480,7 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
                     footprintWKT TEXT,
                     weight INTEGER DEFAULT 10,
                     weight_notes TEXT,
-                    doi_search TEXT,
+                    GBIF_download_doi TEXT,
                         FOREIGN KEY (taxon_id) REFERENCES taxa(taxon_id)
                         ON UPDATE RESTRICT
                         ON DELETE NO ACTION);
@@ -993,7 +993,10 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
     df8["detection_distance"] = det_dist
     df8["radius_meters"] = df8["detection_distance"] + df8["coordinateUncertaintyInMeters"]
     df8["source"] = "gbif"
-    df8["doi_search"] = ""
+    if dwca_download == True:
+        df8["GBIF_download_doi"] = doi
+    else:
+        df8["GBIF_download_doi"] = "bypassed"
     df8["weight"] = 10
     df8["weight_notes"] = ""
     df8.drop(labels=["scientificName", "eventRemarks", "locality",
@@ -1079,6 +1082,18 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
         cursor.execute(stmt)
     print("Summarized unique values retained: " + str(datetime.now() - kepttime))
 
+    ############################################################## DWCA METADATA
+    ############################################################################
+    if dwca_download == True:
+        # Store the value summary for the selected fields in a table.
+        lizardtime = datetime.now()
+        cursor.executescript("""CREATE TABLE GBIF_download_info
+                                (download_key TEXT, doi TEXT, citations TEXT, rights TEXT);""")
+        cursor.execute("""INSERT INTO GBIF_download_info (doi) VALUES ("{0}")""".format(doi))
+        cursor.execute("""INSERT INTO GBIF_download_info (citations) VALUES ("{0}")""".format(citations))
+        cursor.execute("""INSERT INTO GBIF_download_info (rights) VALUES ("{0}")""".format(rights))
+        cursor.execute("""INSERT INTO GBIF_download_info (download_key) VALUES ("{0}")""".format(dkey))
+        print("Stored GBIF Download DOI etc.: " + str(datetime.now() - lizardtime))
 
     ################################################  MAKE POINT GEOMETRY COLUMN
     ############################################################################
