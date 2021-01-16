@@ -771,15 +771,14 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
         # to change the file name, unzip the file, etc.
         print("Downloading Darwin Core Archive zip file for this species .....")
         gotit = None
-        waitstart = datetime.now()
         while gotit is None:
             try:
                 zipdownload = occurrences.download_get(key=dkey, path=outDir)
                 gotit = 1
                 print("Download complete: " + str(datetime.now() - bigdown1))
             except:
-                wait = datetime.now() - waitstart
-                if wait.seconds > 60*20:
+                wait = datetime.now() - bigdown1
+                if wait.seconds > 60*45:
                     gotit = 0
                     print("TIMED OUT -- attempting to proceed anyways")
                 else:
@@ -804,11 +803,8 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
                                                      value=np.NaN, inplace=True)
         df0['latitude'] = df0['latitude'].astype(str)
         df0['longitude'] = df0['longitude'].astype(str)
-        #df0 = df0.astype({'latitude': 'string', 'longitude': 'string'})
         df0['individualCount'].replace(to_replace="UNKNOWN", value=1,
                                        inplace=True)
-
-        #df0.to_csv("T:/temp/dfOcc.csv")
         print("Downloaded and loaded records: " + str(datetime.now() - read1))
 
         ############################  SUMMARY TABLE OF KEYS/FIELDS RETURNED (big)
@@ -924,6 +920,7 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
         attribute = value_counts[x]
         for y in value_counts[x].keys():
             z = value_counts[x][y]
+            y = y.replace('"', "") # Double quotes occur and throw parsing error.
             frog = """INSERT INTO pre_filter_value_counts (attribute, value, count)
                       VALUES ("{0}", "{1}", "{2}")""".format(x,y,z)
             cursor.execute(frog)
