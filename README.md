@@ -53,16 +53,12 @@ This framework is designed to have certain features that provide summaries that 
   * _Taxonomic issues_ -- Failure to account for taxonomic issues, such as species name changes, synonyms, homonyms, and taxon concept changes, can create problems for studies of species' geographic distributions that use species occurrence records.  The potential consequences of these errors include commission errors, inflated omission rates, and missed opportunities for model validation.  The wildlife-wrangler.sqlite database can facilitate efforts to avoid those errors.  This topic is discussed in detail within the user's guide.
 
 
-## Recent changes (July 1, 2020)
-* Added ability to limit requests to within geometries.
-* Added ability to specify a limiting polygon for a species.
-* Occurrence record database (output) now includes column for weight that users can use to omit or devalue undesirable records.
-* Added config file template.  Config file is necessary to avoid sharing your email password when performing large queries of GBIF.
-* Improved handling of duplicates (see Duplicate handling sections above for more information).
+## Recent changes (January 20, 2021)
+* Making species level geometry filtering optional if polygon is present in taxa concepts table.
+* Include citations, rights, download key, and download doi for GBIF downloads.
 
 ## Coming soon
 * Ability to incorporate bird records directly from a copy of the eBird Basic Dataset ([EBD](https://ebird.org/about/download-ebird-data-products)) that the user has downloaded.  The eBird Observational Dataset ([EOD](https://ebird.org/about/download-ebird-data-products)) is available through GBIF, but that dataset does not include some valuable information that is available in the EBD.
-* Making species level geometry filtering optional if polygon is present in taxa concepts table.
 * Incorporating GBIF fields "dataGeneralizations", "georeferenceRemarks", and "informationWitheld".
 * Overriding polygon geometry columns in output database if a "footprintWKT" value was provided.
 * Incorporating tools for navigating taxa concept matching and assessment.

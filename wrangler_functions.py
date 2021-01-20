@@ -355,7 +355,7 @@ def ccw_wkt_from_shp(shapefile, out_txt):
 def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
                               gbif_req_id, gbif_filter_id, default_coordUncertainty,
                               outDir, summary_name, username, password, email,
-                              dwca_download=True):
+                              sp_geometry=True, dwca_download=True):
     """
     Retrieves species occurrence records from the GBIF API.  Filters occurrence
     records, buffers the xy points, and saves them in a database.  Finally,
@@ -373,8 +373,7 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
     outDir -- where to save maps that are exported by this process.
     summary_name -- a short name for some file names.
     sp_geometry -- True or False to use geometry saved with taxon concept when
-        filtering records.  Request geometry is always used if provided.
-        NOTE: This option is forthcoming and is currently hard-coded to "True".
+        filtering records.  Defaults to 'True'.
     dwca_download -- True or False.  False uses the API, which only works when there are
         fewer than a few 100,000 records.  True uses the download method involving
         your GBIF account and email.  Default is True.  Note: False does not
@@ -396,7 +395,6 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
     from dwca.read import DwCAReader
     import numpy as np
 
-    sp_geometry=True
     # Environment variables need to be handled
     if platform.system() == 'Windows':
         os.environ['PATH'] = os.environ['PATH'] + ';' + 'C:/Spatialite'
@@ -1085,11 +1083,14 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
         # Store the value summary for the selected fields in a table.
         lizardtime = datetime.now()
         cursor.executescript("""CREATE TABLE GBIF_download_info
-                                (download_key TEXT, doi TEXT, citations TEXT, rights TEXT);""")
-        cursor.execute("""INSERT INTO GBIF_download_info (doi) VALUES ("{0}")""".format(doi))
-        cursor.execute("""INSERT INTO GBIF_download_info (citations) VALUES ("{0}")""".format(citations))
-        cursor.execute("""INSERT INTO GBIF_download_info (rights) VALUES ("{0}")""".format(rights))
-        cursor.execute("""INSERT INTO GBIF_download_info (download_key) VALUES ("{0}")""".format(dkey))
+                                (download_key TEXT, doi TEXT, citations TEXT,
+                                 rights TEXT);""")
+        cursor.execute('''INSERT INTO GBIF_download_info (doi, citations,
+                                                          rights, download_key)
+                          VALUES ("{0}", "{1}", "{2}", "{3}")'''.format(doi,
+                                                                  citations,
+                                                                  rights,
+                                                                  dkey))
         print("Stored GBIF Download DOI etc.: " + str(datetime.now() - lizardtime))
 
     ################################################  MAKE POINT GEOMETRY COLUMN
