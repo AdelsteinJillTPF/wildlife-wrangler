@@ -1,7 +1,6 @@
 # The Wildlife Wrangler
 __Maintainer__
-Nathan M. Tarr (nmtarr@ncsu.edu, [orcid:0000-0003-2925-8948](https://orcid.org/0000-0003-2925-8948)), github.com/nmtarr)
-
+Nathan M. Tarr (nmtarr@ncsu.edu, [orcid:0000-0003-2925-8948](https://orcid.org/0000-0003-2925-8948), github.com/nmtarr)
 
 __Contributors__
 Alexa McKerrow (amckerrow@usgs.gov, [orcid:0000-0002-8312-2905](https://orcid.org/0000-0002-8312-2905))
