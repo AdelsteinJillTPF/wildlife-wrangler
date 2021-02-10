@@ -105,6 +105,91 @@ def MapShapefilePolygons(map_these, title):
     plt.title(title, fontsize=20, pad=-40, backgroundcolor='w')
     return
 
+def build_output_db(spdb):
+    """
+    Create a database for storing occurrence and taxon concept data.
+    The column names that are "camel case" are Darwin Core attributes, whereas
+    lower case names containing "_" between words are not.  Not all Darwin
+    Core attributes are included.  Only those that could be useful for filtering
+    and assigning weights are included.
+
+    Parameters
+    ----------
+    spdb : Path for sqlite database to create; string.
+
+    Returns
+    -------
+    Nothing.
+    """
+    import os
+    import sqlite3
+
+    # Delete the database if it already exists
+    if os.path.exists(spdb):
+        os.remove(spdb)
+
+    # Create or connect to the database
+    conn = sqlite3.connect(spdb, isolation_level='DEFERRED')
+    cursor = conn.cursor()
+
+    # Create a table for occurrence records.
+    sql_cdb = """
+            CREATE TABLE IF NOT EXISTS occurrences (
+                    record_id INTEGER NOT NULL PRIMARY KEY,
+                    request_id TEXT NOT NULL,
+                    filter_id TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    retrieval_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    detection_distance INTEGER,
+                    radius_meters INTEGER,
+                    GBIF_download_doi TEXT,
+                    general_remarks TEXT,
+                    weight INTEGER DEFAULT 10,
+                    weight_notes TEXT,
+
+                    accessRights TEXT,
+                    bibliographicCitation TEXT,
+                    basisOfRecord TEXT,
+                    collectionCode TEXT,
+                    coordinateUncertaintyInMeters INTEGER,
+                    dataGeneralizations TEXT,
+                    datasetName TEXT,
+                    decimalLatitude TEXT,
+                    decimalLongitude TEXT,
+                    establishmentMeans TEXT,
+                    eventDate TEXT,
+                    eventRemarks TEXT,
+                    footprintWKT TEXT,
+                    footprintSRS TEXT,
+                    georeferencedBy TEXT,
+                    georeferenceProtocol TEXT,
+                    georeferenceVerificationStatus TEXT,
+                    georeferenceRemarks TEXT,
+                    habitat TEXT,
+                    identifiedBy TEXT,
+                    identifiedRemarks TEXT,
+                    identificationQualifier TEXT,
+                    individualCount INTEGER DEFAULT 1,
+                    informationWitheld TEXT,
+                    institutionCode TEXT,
+                    issues TEXT,
+                    license TEXT,
+                    locationAccordingTo TEXT,
+                    locationRemarks TEXT,
+                    modified TEXT,
+                    occurrenceStatus TEXT,
+                    occurrenceRemarks TEXT,
+                    recordedBy TEXT,
+                    samplingProtocol TEXT,
+                    taxonConceptID INTEGER NOT NULL,
+                    verbatimLocality TEXT,
+                        FOREIGN KEY (taxonConceptID) REFERENCES taxa(taxonConceptID)
+                        ON UPDATE RESTRICT
+                        ON DELETE NO ACTION);
+    """
+    cursor.executescript(sql_cdb)
+    return
+
 def getGBIFcode(name, rank='species'):
     """
     Returns the GBIF species code for a scientific name.
