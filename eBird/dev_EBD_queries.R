@@ -2,6 +2,9 @@ library(auk)
 library(tidyverse)
 starttime = Sys.time() # Runtime has been 30 min
 
+# retrieve filter sets from parameters db -------------------------------
+
+
 # path to the ebird data file -------------------------------------------
 #input_file <- system.file("extdata/ebd-sample.txt", package = "auk")
 input_file <- "T:/data/eBird/ebd_US_relDec-2020.txt"

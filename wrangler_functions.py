@@ -352,6 +352,30 @@ def ccw_wkt_from_shp(shapefile, out_txt):
         print("You need to reproject the shapefile to EPSG:4326")
     return
 
+def get_taxon_concept(paramdb, taxon_id):
+    '''
+    Retrieves taxon concept information from the parameters database.
+
+    Parameters
+    ----------
+    paramdb : String; path to the parameters sqlite database.
+    taxon_id : String; wrangler code for the taxon.
+
+    Returns
+    -------
+    concept : A tuple of gbif_code, common_name, scientific_name,
+        detection_distance, and sp_geom).
+    '''
+    import sqlite3
+    conn2 = sqlite3.connect(paramdb, isolation_level='DEFERRED')
+    cursor2 = conn2.cursor()
+    sql_tax = """SELECT gbif_id, common_name, scientific_name,
+                        detection_distance_meters, geometry
+                 FROM taxa_concepts
+                 WHERE taxon_id = '{0}';""".format(taxon_id)
+    concept = cursor2.execute(sql_tax).fetchall()[0]
+    return concept
+
 def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
                               gbif_req_id, gbif_filter_id, default_coordUncertainty,
                               outDir, summary_name, username, password, email,
@@ -420,6 +444,7 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
                  FROM taxa_concepts
                  WHERE taxon_id = '{0}';""".format(taxon_id)
     concept = cursor2.execute(sql_tax).fetchall()[0]
+    #concept = get_taxon_concept(paramdb, taxon_id)                             ACTIVATE THIS LINE and DELETE ABOVE
     gbif_id = concept[0]
     common_name = concept[1]
     scientific_name = concept[2]
