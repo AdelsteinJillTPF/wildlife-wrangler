@@ -32,3 +32,34 @@ rename_dict = {"ebird_sp_code": "taxonConceptID",
                "global_unique_identifier": "record_id",
                "obseration_count": "individualCount"}
 df.rename(rename_dict, axis=1, inplace=True)
+
+target_df = pd.DataFrame(columns=['record_id', 'request_id', 'filter_id', 'source', 'retrieval_date',
+       'detection_distance', 'radius_meters', 'GBIF_download_doi',
+       'general_remarks', 'weight', 'weight_notes', 'accessRights',
+       'bibliographicCitation', 'basisOfRecord', 'collectionCode',
+       'coordinateUncertaintyInMeters', 'dataGeneralizations', 'datasetName',
+       'decimalLatitude', 'decimalLongitude', 'establishmentMeans',
+       'eventDate', 'eventRemarks', 'footprintWKT', 'footprintSRS',
+       'georeferencedBy', 'georeferenceProtocol',
+       'georeferenceVerificationStatus', 'georeferenceRemarks', 'habitat',
+       'identifiedBy', 'identifiedRemarks', 'identificationQualifier',
+       'individualCount', 'informationWitheld', 'institutionCode', 'issues',
+       'license', 'locationAccordingTo', 'locationRemarks', 'modified',
+       'occurrenceStatus', 'occurrenceRemarks', 'recordedBy',
+       'samplingProtocol', 'taxonConceptID', 'verbatimLocality'])
+
+
+def validate_occurrences_df(dataframe):
+    """
+    Checks whether a data frame matches the schema of occurrences in an output
+    database occurrences table.
+
+    PARAMETERS
+    dataframe : input dataframe to assess the format of
+
+    RETURNED
+    True or False
+    """
+    # Are the columns names correct?
+
+    # Are the data types of each column correct?

@@ -3,7 +3,7 @@ library(tidyverse)
 starttime = Sys.time() # Runtime has been 30 min
 
 # retrieve filter sets from parameters db -------------------------------
-
+# ebd needs its own tables for requests and filtering?
 
 # path to the ebird data file -------------------------------------------
 #input_file <- system.file("extdata/ebd-sample.txt", package = "auk")
@@ -15,6 +15,8 @@ processed_ebd <- "T:/temp/ebd_filtered.csv"
 species <- c("Swainson's Warbler")
 country <- "US"
 date <- c("2015-01-01", "2021-12-31")
+bbox <- ""#c(lng_min, lat_min, lng_max, lat_max)
+distance <- c(0, 10)
 
 # query -----------------------------------------------------------------
 ebd_data <- input_file %>%
@@ -24,6 +26,9 @@ ebd_data <- input_file %>%
   auk_species(species=species) %>%
   auk_date(date=date) %>%
   auk_country(country=country) %>%
+  auk_bbox(bbox=bbox) %>%
+  auk_distance(distance=distance) %>%
+
   # 3. run filtering
   auk_filter(file = queried_ebd, overwrite = TRUE) %>%
   # 4. read text file into r data frame
