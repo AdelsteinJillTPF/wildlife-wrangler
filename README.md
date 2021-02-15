@@ -10,7 +10,7 @@ Matthew Rubino (mjrubino@ncsu.edu, [orcid:0000-0003-0651-3053](https://orcid.org
 
 ## USGS Software Release Information
 IP-120038
-https://doi.org/XXXXX
+https://doi.org/10.5066/P98K7E93
 
 
 ## Purpose
@@ -93,7 +93,7 @@ See the included spatialite install notes for how to install spatialite on Windo
 All code is included in this repository.  Runtimes of discrete tasks made grouping code into separate functions preferable.  
 
 ## Suggested Citation
-Tarr, N. M., McKerrow, A. J., and M. J. Rubino. 2021. The Wildlife Wrangler. U.S. Geological Survey software release, accessed January 6, 2021, at https://doi.org/XXXXX
+Tarr, N. M., McKerrow, A. J., and M. J. Rubino. 2021. The Wildlife Wrangler. U.S. Geological Survey software release, accessed January 6, 2021, at https://doi.org/10.5066/P98K7E93
 
 ## Copyright and License
 Unless otherwise noted, This project is in the public domain in the United States because it contains materials that originally came from the United States Geological Survey, an agency of the United States Department of Interior. For more information, see the official USGS copyright policy at https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits
