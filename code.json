@@ -14,7 +14,7 @@
 	"homepageURL": "https://code.usgs.gov/sas/bioscience/wildlife-wrangler",
 	"downloadURL": "https://code.usgs.gov/sas/bioscience/wildlife-wrangler",
 	"disclaimerURL": "https://code.usgs.gov/sas/bioscience/wildlife-wrangler/-/blob/master/DISCLAIMER.md",
-	"repositoryURL": "https://code.usgs.gov/sas/bioscience/wildlife-wrangler.git",
+	"repositoryURL": "https://code.usgs.gov/sas/bioscience/wildlife-wrangler/-/tree/master",
 	"vcs": "git",
 	"laborHours": 0,
 	"tags": [
