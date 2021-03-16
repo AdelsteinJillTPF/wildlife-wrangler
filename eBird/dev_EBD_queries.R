@@ -1,5 +1,6 @@
 library(auk)
 library(tidyverse)
+library(sf)
 #library(DBI)
 #library(RSQLite)
 library(lubridate)
@@ -21,13 +22,17 @@ input_file <- "T:/data/eBird/ebd_US_relDec-2020.txt"
 # parameters ------------------------------------------------------------
 queried_ebd <- "T:/temp/ebd_queried.txt"
 processed_ebd <- "T:/temp/ebd_filtered.csv"
-species <- "Varied Thrush"
+species <- "Yellow Warbler"
 country <- "US"
 months_range <- "3,5"
 years_range <- "2015,2020"
-lon_range <- "27,41"
-lat_range <- "-89,-75"
+lon_range <- "-89,-75"
+lat_range <- "27,41"
 max_coordinate_uncertainty <- 10000
+collection_codes_omit <- c("EBIRD")
+sampling_protocols_omit <- c("Historical", "Stationary")
+taxon_polygon <- ""#"POLYGON ((-84.09680233298448 36.69265225442667, -84.07962135716329 34.5561660300382, -84.07962135716329 34.5561660300382, -80.25685423694925 34.65515526072436, -81.15026497965096 36.71331438415306, -84.09680233298448 36.69265225442667))"
+query_polygon = "POLYGON ((-82.74809573102132 36.96082629937069, -85.0932989306133 35.63154639485496, -81.0987220521874 33.56697226279766, -79.4235769096217 36.34054727735634, -79.4235769096217 36.34054727735634, -82.74809573102132 36.96082629937069))"
 
 # prep some variables for filter -----------------------------------------------
 # auk doesn't allow filtering on months AND year with read_ebd; they have to be
@@ -60,12 +65,42 @@ end_day <- lubridate::days_in_month(paste(c(end_yr, "-", end_month, "-01"), coll
 date_filter <- c(paste(c(start_yr, "-", start_month, "-01"), collapse=""),
                  paste(c(end_yr, "-", end_month, "-", end_day), collapse=""))
 
-# prep bounding box vector for filter
-lat_min <- as.numeric(strsplit(lat_range, ",")[[1]][1])
-lat_max <- as.numeric(strsplit(lat_range, ",")[[1]][2])
-lng_min <- as.numeric(strsplit(lon_range, ",")[[1]][1])
-lng_max <- as.numeric(strsplit(lon_range, ",")[[1]][2])
-bbox <- c(lng_min, lat_min, lng_max, lat_max)
+# prep bounding box vector in the case that taxon and/or query polygons were provided
+bbox <- NULL
+if (query_polygon == "" && taxon_polygon == "") {
+    bbox <- NULL
+} else if (query_polygon != "" && taxon_polygon == "") {
+    bbox <- st_bbox(st_as_sfc(query_polygon))
+} else if (query_polygon == "" && taxon_polygon != "") {
+    bbox <- st_bbox(st_as_sfc(taxon_polygon))
+} else if (query_polygon != "" && taxon_polygon != "") {
+    # Get/use the intersection of the two polygons
+    filter_polygon <- st_as_sfc(query_polygon)
+    sp_polygon <- st_as_sfc(taxon_polygon)
+    bbox <- st_bbox(st_intersection(filter_polygon, sp_polygon))
+}
+
+# prep bounding box vector for filter if lat and lon ranges were provided,
+# and if other polygons were not
+if (lat_range == "" || lon_range == "") {
+  null_box <- TRUE
+} else {
+  null_box <- FALSE
+}
+
+if (is.null(bbox) == TRUE && null_box == FALSE) {
+  lat_min <- as.numeric(strsplit(lat_range, ",")[[1]][1])
+  lat_max <- as.numeric(strsplit(lat_range, ",")[[1]][2])
+  lng_min <- as.numeric(strsplit(lon_range, ",")[[1]][1])
+  lng_max <- as.numeric(strsplit(lon_range, ",")[[1]][2])
+  bbox <- c(lng_min, lat_min, lng_max, lat_max)
+}
+
+print(bbox)
+
+# a gps precision for eBird checklists must be assumed, since not given, for
+# estimation of coordinateUncertaintyInMeters
+EBD_gps_precision <- 10
 
 # query -----------------------------------------------------------------
 ebd_data <- input_file %>%
@@ -76,7 +111,7 @@ ebd_data <- input_file %>%
   auk_species(species=c(species)) %>%
   auk_date(date=date_filter) %>%
   auk_country(country=country) %>%
-  auk_bbox(bbox=c(-125, 37, -120, 52)) %>%
+  auk_bbox(bbox=bbox) %>%
   auk_distance(distance=c(0, max_coordinate_uncertainty/1000)) %>%
 
   # 3. run filtering
@@ -97,12 +132,17 @@ ebd_data2 <- ebd_data %>%
              mutate(eBird_sp_code = ebird_code,
                     retrieval_date = Sys.time()) %>%
              select(eBird_sp_code, global_unique_identifier, checklist_id,
-                    last_edited_date, common_name, observation_count, locality,
-                    latitude, longitude, observation_date, observer_id,
-                    effort_distance_km, effort_area_ha, trip_comments,
+                    project_code, last_edited_date, common_name,
+                    observation_count, locality, latitude, longitude,
+                    observation_date, observer_id, effort_distance_km,
+                    protocol_type, effort_area_ha, trip_comments,
                     species_comments) %>%
-             mutate(effort_distance_m = effort_distance_km*1000) %>%
+             mutate(effort_distance_m = as.numeric(effort_distance_km)*1000) %>%
+             mutate(coordinateUncertaintyInMeters = effort_distance_m + EBD_gps_precision) %>%
+             filter(coordinateUncertaintyInMeters <= max_coordinate_uncertainty) %>%
              filter(month(observation_date) %in% ok_months) %>%
+             filter(!project_code %in% collection_codes_omit) %>%
+             filter(!protocol_type %in% sampling_protocols_omit) %>%
              write_csv(processed_ebd)
 View(ebd_data2)
 

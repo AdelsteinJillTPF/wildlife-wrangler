@@ -396,7 +396,6 @@ def ccw_wkt_from_shp(shapefile, out_txt):
     shapefile -- path to the shpefile to read.
     out_txt -- path to the text file to write the wkt to.
     """
-
     import fiona
     import shapely
     from shapely.geometry import shape, Polygon, LinearRing
