@@ -1,3 +1,23 @@
+# parameters -------------------------------------------------------------------
+species <- "Yellow-billed Cuckoo"
+country <- "US"
+months_range <- "3,6"
+years_range <- "2018,2020"
+lon_range <- "-89,-75"
+lat_range <- "27,41"
+max_coordinate_uncertainty <- 10000
+collection_codes_omit <- c("EBIRD_ATL_VA")
+sampling_protocols_omit <- c("Historical", "Stationary")
+taxon_polygon <- "POLYGON ((-84.09680233298448 36.69265225442667, -84.07962135716329 34.5561660300382, -84.07962135716329 34.5561660300382, -80.25685423694925 34.65515526072436, -81.15026497965096 36.71331438415306, -84.09680233298448 36.69265225442667))"
+query_polygon = "POLYGON ((-82.74809573102132 36.96082629937069, -85.0932989306133 35.63154639485496, -81.0987220521874 33.56697226279766, -79.4235769096217 36.34054727735634, -79.4235769096217 36.34054727735634, -82.74809573102132 36.96082629937069))"
+
+
+# path to the ebird data file --------------------------------------------------
+input_file <- "T:/data/eBird/ebd_US_relDec-2020.txt"
+queried_ebd <- "T:/temp/ebd_queried.txt"
+processed_ebd <- "T:/temp/ebd_filtered.csv"
+
+# ------------------------------------------------------------------------------
 # Auk uses filters that are compiled and incorporated into a query. This poses
 # a challenge for dynamic filtering where filters may or may not be used.  We
 # have to set defaults.
@@ -6,25 +26,6 @@ library(tidyverse)
 library(sf)
 library(lubridate)
 starttime = Sys.time() # Runtime has been 30 min
-
-# path to the ebird data file --------------------------------------------------
-#input_file <- system.file("extdata/ebd-sample.txt", package = "auk")
-input_file <- "T:/data/eBird/ebd_US_relDec-2020.txt"
-queried_ebd <- "T:/temp/ebd_queried.txt"
-processed_ebd <- "T:/temp/ebd_filtered.csv"
-
-# parameters -------------------------------------------------------------------
-species <- "Yellow Warbler"
-country <- "US"
-months_range <- "3,6"
-years_range <- "2018,2020"
-lon_range <- "-89,-75"
-lat_range <- "27,41"
-max_coordinate_uncertainty <- 10000
-collection_codes_omit <- c("EBIRD")
-sampling_protocols_omit <- c("Historical", "Stationary")
-taxon_polygon <- "POLYGON ((-84.09680233298448 36.69265225442667, -84.07962135716329 34.5561660300382, -84.07962135716329 34.5561660300382, -80.25685423694925 34.65515526072436, -81.15026497965096 36.71331438415306, -84.09680233298448 36.69265225442667))"
-query_polygon = "POLYGON ((-82.74809573102132 36.96082629937069, -85.0932989306133 35.63154639485496, -81.0987220521874 33.56697226279766, -79.4235769096217 36.34054727735634, -79.4235769096217 36.34054727735634, -82.74809573102132 36.96082629937069))"
 
 # prep dates -------------------------------------------------------------------
 # auk doesn't allow filtering on months AND year with read_ebd; they have to be
@@ -108,6 +109,8 @@ if (is.null(bbox) == TRUE && null_box == FALSE) {
   lng_min <- as.numeric(strsplit(lon_range, ",")[[1]][1])
   lng_max <- as.numeric(strsplit(lon_range, ",")[[1]][2])
   bbox <- c(lng_min, lat_min, lng_max, lat_max)
+  names(bbox) <- c("xmin", "ymin", "xmax", "ymax")
+  attr(bbox, "class") = "bbox"
 }
 
 # prep country -----------------------------------------------------------------
@@ -120,10 +123,10 @@ EBD_gps_precision <- 10
 
 # account for gps precision in distance filter.  error could exist on either
 #   end of a straight line path, so double precision when subtracting.
-max_distance <- (max_coordinate_uncertainty-(2*EBD_gps_precision))/1000
+max_distance <- as.integer(ceiling((max_coordinate_uncertainty-2*EBD_gps_precision)/1000))  ### NOT WORKING
 
 # query -----------------------------------------------------------------
-ebd_data <- input_file %>%
+ebd_data_0 <- input_file %>%
   # 1. reference file
   auk_ebd() %>%
 
@@ -132,7 +135,7 @@ ebd_data <- input_file %>%
   auk_date(date=date_filter) %>%
   auk_country(country=country) %>%
   auk_bbox(bbox=bbox) %>%
-  auk_distance(distance=c(0, max_distance) %>%
+  auk_distance(distance=c(0, max_distance)) %>%
 
   # 3. run filtering
   auk_filter(file = queried_ebd, overwrite = TRUE) %>%
@@ -140,15 +143,11 @@ ebd_data <- input_file %>%
   # 4. read text file into r data frame
   read_ebd()
 
-# display -------------------------------------------------------------
-View(ebd_data)
-
-# prep data frame for wrangler ----------------------------------------
+# prep data frame for python ----------------------------------------
 # add column for eBird species code
-# get eBird species code
 ebird_code <- select(filter(ebird_taxonomy, common_name==species),
                      species_code)[[1]]
-ebd_data2 <- ebd_data %>%
+ebd_data <- ebd_data_0 %>%
              mutate(eBird_sp_code = ebird_code,
                     retrieval_date = Sys.time()) %>%
              select(eBird_sp_code, global_unique_identifier, checklist_id,
@@ -164,7 +163,6 @@ ebd_data2 <- ebd_data %>%
              filter(!project_code %in% collection_codes_omit) %>%
              filter(!protocol_type %in% sampling_protocols_omit) %>%
              write_csv(processed_ebd)
-View(ebd_data2)
 
 endtime = Sys.time()
 print(endtime - starttime)
@@ -173,17 +171,17 @@ print(endtime - starttime)
 # tests ------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
-max(ebd_data2$coordinateUncertaintyInMeters) <= max_coordinate_uncertainty
-max(ebd_data2$effort_distance_m)
+max(ebd_data$coordinateUncertaintyInMeters) <= max_coordinate_uncertainty
+max(ebd_data$effort_distance_m)
 
+View(ebd_data)
 library(maps)
-demo(nc, ask = FALSE, echo = FALSE)
 usa = st_as_sf(map('usa', plot = FALSE, fill = TRUE))
-sf <- st_as_sf(ebd_data2, coords=c("longitude", "latitude"), crs=4326)
+sf <- st_as_sf(ebd_data, coords=c("longitude", "latitude"), crs=4326)
 bbox2 <- st_as_sfc(bbox) %>% st_set_crs(4326)
 ggplot() +
   geom_sf(data=usa) +
   geom_sf(data=st_as_sfc(query_polygon, crs=4326), aes()) +
   geom_sf(data=st_as_sfc(taxon_polygon, crs=4326), aes()) +
-  geom_sf(data=sf, aes()) +
-  geom_sf(data=bbox2, aes())
+  geom_sf(data=bbox2, aes()) +
+  geom_sf(data=sf, aes())
