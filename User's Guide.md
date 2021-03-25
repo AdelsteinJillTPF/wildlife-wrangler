@@ -1,7 +1,7 @@
 ## Installation for Windows 10
 1.  Use [Git](https://git-scm.com/) to clone the master repo from github to your computer.
 2.  Build a [Conda](https://docs.conda.io/projects/conda/en/latest/index.html) environment. Running the following lines of code (individually) in a conda shell should create a suitable environment named "wrangler":
-    a. "conda create -n wrangler python=3.6 pandas jupyter basemap-data-hires notebook numpy shapely matplotlib=3.2.2"
+    a. "conda create --name wrangler python jupyter notebook r-base rpy2 pandas basemap-data-hires numpy shapely matplotlib"
     b. "conda activate wrangler"
     c. "pip install pygbif python-dwca-reader"
 3.  Install [Spatialite](https://www.gaia-gis.it/fossil/libspatialite/index).  Spatialite is a spatial extension for [SQLite](https://www.sqlite.org/index.html).  SQLite is included in Python, but not the spatialite extension.  See the included file "spatialite PC install notes.txt" for more instructions.

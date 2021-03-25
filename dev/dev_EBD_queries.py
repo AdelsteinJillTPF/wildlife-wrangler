@@ -2,23 +2,43 @@ working_directory = "T:/temp/"
 EBD_file = "T:/data/eBird/ebd_US_relDec-2020.txt"
 queried_ebd = working_directory + "ebd_queried.txt"
 processed_ebd = working_directory + "ebd_filtered.csv"
-species = "Yellow-billed Cuckoo"
-country = "US"
-months_range = "3,6"
-years_range = "2018,2020"
-lon_range = "-89,-75"
-lat_range = "27,41"
-max_coordinate_uncertainty = 10000
-collection_codes_omit = "EBIRD_ATL_VA"
-sampling_protocols_omit = "Historical", "Stationary"
-taxon_polygon = "POLYGON ((-84.09680233298448 36.69265225442667, -84.07962135716329 34.5561660300382, -84.07962135716329 34.5561660300382, -80.25685423694925 34.65515526072436, -81.15026497965096 36.71331438415306, -84.09680233298448 36.69265225442667))"
-query_polygon = "POLYGON ((-82.74809573102132 36.96082629937069, -85.0932989306133 35.63154639485496, -81.0987220521874 33.56697226279766, -79.4235769096217 36.34054727735634, -79.4235769096217 36.34054727735634, -82.74809573102132 36.96082629937069))"
+query_name = "DEVrpyTEST"
 
-def get_EBD_records(EBD_file, queried_ebd, processed_ebd, species, country,
-                    months_range, years_range, lon_range, lat_range,
-                    max_coordinate_uncertainty, collection_codes_omit,
-                    sampling_protocols_omit, taxon_polygon, query_polygon):
-    """
+taxon_info = {'EBIRD_ID': 'Yellow-billed Cuckoo',
+    'GBIF_ID': 2496287,
+    'ID': 'TestCuckoo',
+    'TAXON_EOO': 'POLYGON ((-84.09680233298448 36.69265225442667, '
+          '-84.07962135716329 34.5561660300382, -84.07962135716329 '
+          '34.5561660300382, -80.25685423694925 34.65515526072436, '
+          '-81.15026497965096 36.71331438415306, -84.09680233298448 '
+          '36.69265225442667))'}
+
+filter_set = {'bases_omit': '',
+ 'collection_codes_omit': 'EBIRD_ATL_VA, EBIRD_PR',
+ 'country': 'US',
+ 'datasets_omit': '',
+ 'default_coordUncertainty': 1000,
+ 'duplicates_OK': False,
+ 'geoissue': False,
+ 'has_coordinate_uncertainty': False,
+ 'institutions_omit': '',
+ 'issues': '',
+ 'lat_range': '27,41',
+ 'lon_range': '-89,-75',
+ 'max_coordinate_uncertainty': 10000,
+ 'months_range': '3,11',
+ 'name': 'test_filters_1',
+ 'query_polygon': 'POLYGON ((-82.74809573102132 36.96082629937069, '
+                  '-85.0932989306133 35.63154639485496, -81.0987220521874 '
+                  '33.56697226279766, -79.4235769096217 36.34054727735634, '
+                  '-79.4235769096217 36.34054727735634, -82.74809573102132 '
+                  '36.96082629937069))',
+ 'sampling_protocols_omit': 'Historical, Stationary',
+ 'years_range': '2018,2020'}
+
+def get_EBD_records(taxon_info, filter_set, EBD_file, query_name,
+                    queried_ebd, processed_ebd):
+    '''
     Gets eBird records from a copy of the Ebird Basic Dataset that you acquired.
     Primarily runs R code that uses the auk package to query the data set in
     an efficient manner.  Some filters can be applied during the query, but
@@ -37,15 +57,15 @@ def get_EBD_records(EBD_file, queried_ebd, processed_ebd, species, country,
     lon_range : range of desired longitudes for bounding box filtering; like "-89,-75"; string
     lat_range : range of desired latitudes for bonding box filtering; like "27,41"; string
     max_coordinate_uncertainty : maximum traveling count distance in m; integer
-    collection_codes_omit :
-    sampling_protocols_omit :
-    taxon_polygon :
-    query_polygon :
+    collection_codes_omit : projects to omit; string; like "EBIRD_ATL_VA, EBIRD_PR"
+    sampling_protocols_omit : protocol types to omit; string; like "Historical, Stationary"
+    taxon_polygon : well-known text of polygon within species occurs; string; WGS 84
+    query_polygon : well-known text of polygon for query; string; WGS 84
 
     Returns
     -------
     Data frame of filtered ebird records
-    """
+    '''
     import rpy2.robjects as robjects
     import rpy2.robjects.packages as rpackages
     from rpy2.robjects.vectors import StrVector
@@ -72,10 +92,8 @@ def get_EBD_records(EBD_file, queried_ebd, processed_ebd, species, country,
     lon_range <- "{7}"
     lat_range <- "{8}"
     max_coordinate_uncertainty <- {9}
-    collection_codes_omit <- "{10}"
-    sampling_protocols_omit <- "{11}"
-    taxon_polygon <- "{12}"
-    query_polygon <- "{13}"
+    taxon_polygon <- "{10}"
+    query_polygon <- "{11}"
 
     # Auk uses filters that are compiled and incorporated into a query. This poses
     # a challenge for dynamic filtering where filters may or may not be used.  We
@@ -217,45 +235,106 @@ def get_EBD_records(EBD_file, queried_ebd, processed_ebd, species, country,
                         species_comments) %>%
                  mutate(effort_distance_m = as.numeric(effort_distance_km)*1000) %>%
                  mutate(coordinateUncertaintyInMeters = effort_distance_m + (2*EBD_gps_precision)) %>%
-                 #filter(coordinateUncertaintyInMeters <= max_coordinate_uncertainty) %>%  This should be true, test so.
                  filter(month(observation_date) %in% ok_months) %>%
-                 filter(!project_code %in% c(collection_codes_omit)) %>%
-                 filter(!protocol_type %in% c(sampling_protocols_omit)) %>%
                  write_csv(processed_ebd)
 
     endtime = Sys.time()
     print(endtime - starttime)
-    '''.format(EBD_file, queried_ebd, processed_ebd, species, country, months_range,
-    years_range, lon_range, lat_range, max_coordinate_uncertainty, collection_codes_omit,
-    sampling_protocols_omit, taxon_polygon, query_polygon)
-
-    # Run code
-    robjects.r(code)
-
-    # Read output data frame
-    ebd_data = pd.read_csv(processed_ebd)
-    '''
-    This should eventually be usable (or something similar) to avoid having to write
-    the R data frame and then read it in with pandas.  It is supposed to be
-    possible to convert robject data frames to pandas dataframes but the rpy2
-    available from conda 2.x doesn't actually work.
-    # *****************************************************************************
-    # Retrieve the filtered ebird data frame  ---- this should work, but doesn't
-    rdf = robjects.globalenv['ebd_data']
-    # Using a conversion context in which the pandas conversion is
-    # added to the default conversion rules, the rpy2 object
-    # (an R data frame) is converted to a pandas data frame.
-    from rpy2.robjects import pandas2ri
-    robjects.pandas2ri.activate() # should automatically convert r dataframe to pandas
-    from rpy2.robjects import default_converter
-    from rpy2.robjects.conversion import localconverter
-    with localconverter(robjects.default_converter + pandas2ri.converter):
-        ebd_data = robjects.conversion.ri2py(rdf)
-    print(type(ebd_data))
-    '''
+    '''.format(EBD_file, queried_ebd, processed_ebd, taxon_info['EBIRD_ID'],
+    filter_set["country"], filter_set["months_range"], filter_set["years_range"],
+    filter_set["lon_range"], filter_set["lat_range"],
+    filter_set["max_coordinate_uncertainty"], taxon_info["TAXON_EOO"],
+    filter_set["query_polygon"])
     return ebd_data
+ebird_data = get_EBD_records(taxon_info, filter_set, EBD_file, query_name)
 
-ebird_data = get_EBD_records(EBD_file, queried_ebd, processed_ebd, species, country,
-                             months_range, years_range, lon_range, lat_range,
-                             max_coordinate_uncertainty, collection_codes_omit,
-                             sampling_protocols_omit, taxon_polygon, query_polygon)
+
+
+###############################################################################
+###############################################################################
+import rpy2.robjects as robjects
+import rpy2.robjects.packages as rpackages
+from rpy2.robjects.vectors import StrVector
+import pandas as pd
+
+# import R's utility package, select a mirror for R packages
+utils = rpackages.importr('utils')
+utils.chooseCRANmirror(ind=1) # select the first mirror in the list
+
+# R packages to load
+packnames = ('sf', 'auk', 'lubridate', 'tidyverse')
+names_to_install = [x for x in packnames if not rpackages.isinstalled(x)]
+if len(names_to_install) > 0:
+    utils.install_packages(StrVector(names_to_install))
+
+code2='''
+EBD_file <- "{0}"
+queried_ebd <- "{1}"
+processed_ebd <- "{2}"
+species <- "{3}"
+country <- "{4}"
+months_range <- "{5}"
+years_range <- "{6}"
+lon_range <- "{7}"
+lat_range <- "{8}"
+max_coordinate_uncertainty <- {9}
+taxon_polygon <- "{10}"
+query_polygon <- "{11}"
+
+# Auk uses filters that are compiled and incorporated into a query. This poses
+# a challenge for dynamic filtering where filters may or may not be used.  We
+# have to set defaults.
+library(auk)
+library(tidyverse)
+library(sf)
+library(lubridate)
+starttime = Sys.time() # Runtime has been 30 min
+
+# prep dates -------------------------------------------------------------------
+# auk doesn't allow filtering on months AND year with read_ebd; they have to be
+#   done separately, one with auk filters and the other after with dplyr.  I
+#   chose to do the year filtering with auk to minimize size of returned tibble.
+#   This all requires formatting dates as text correctly
+# format start month
+if (months_range != "") {{
+  if (length(strsplit(months_range, ",")[[1]][1]) == 1) {{
+    start_month <- paste(c("0", strsplit(months_range, ",")[[1]][1]), collapse="")
+    }} else {{
+    start_month <- strsplit(months_range, ",")[[1]][1]}}
+  start_month <- str_trim(start_month)
+
+  # format end month
+  if (length(strsplit(months_range, ",")[[1]][2]) == 1) {{
+    end_month <- paste(c("0", strsplit(months_range, ",")[[1]][2]), collapse="")
+    }} else {{
+    end_month <- strsplit(months_range, ",")[[1]][2]}}
+  end_month <- str_trim(end_month)
+
+  # create vector of ok months for filtering with dplyr
+  ok_months <- seq(as.numeric(start_month), as.numeric(end_month))
+  print(end_month)
+}}
+'''.format(EBD_file, queried_ebd, processed_ebd, taxon_info['EBIRD_ID'],
+filter_set["country"], filter_set["months_range"], filter_set["years_range"],
+filter_set["lon_range"], filter_set["lat_range"],
+filter_set["max_coordinate_uncertainty"], taxon_info["TAXON_EOO"],
+filter_set["query_polygon"])
+
+# Run code
+robjects.r(code2)
+###############################################################################
+###############################################################################
+
+
+
+
+
+
+################################################################################
+THIS MAY NEED TO BE ADDED BACK INTO THE FUNCTION OR MAKE SURE IT GETS IMPLE<EMTED LATER ON!!!!!!!1
+# Filter out unwanted protocols and projects.  Done in Python here because
+#   of challenges passing omit lists to R in an acceptable format.
+collection_codes_omit = [x.strip() for x in collection_codes_omit.split(",")]
+sampling_protocols_omit = [x.strip() for x in sampling_protocols_omit.split(",")]
+ebd_data = (ebd_data[ebd_data["project_code"].isin(collection_codes_omit) == False]
+            [lambda x: x["protocol_type"].isin(sampling_protocols_omit) == False])
