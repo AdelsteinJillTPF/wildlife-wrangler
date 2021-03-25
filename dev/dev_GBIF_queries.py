@@ -1,8 +1,6 @@
 configDir = "T:/Data/"  # Path to folder where you saved your wildlifeconfig file.
 working_directory = "T:/temp/"
 query_name = 'withRTest'
-
-
 taxon_info = {'EBIRD_ID': 'Yellow-billed Cuckoo',
     'GBIF_ID': 2496287,
     'ID': 'TestCuckoo',
@@ -11,7 +9,6 @@ taxon_info = {'EBIRD_ID': 'Yellow-billed Cuckoo',
           '34.5561660300382, -80.25685423694925 34.65515526072436, '
           '-81.15026497965096 36.71331438415306, -84.09680233298448 '
           '36.69265225442667))'}
-
 filter_set = {'bases_omit': '',
  'collection_codes_omit': '',
  'country': 'US',
@@ -19,14 +16,14 @@ filter_set = {'bases_omit': '',
  'default_coordUncertainty': 1000,
  'duplicates_OK': False,
  'geoissue': False,
- 'get_dwca': True,
- 'has_coordinate_uncertainty': False,
+ 'get_dwca': False,
+ 'has_coordinate_uncertainty': True,
  'institutions_omit': '',
  'issues': '',
  'lat_range': '27,41',
  'lon_range': '-89,-75',
  'max_coordinate_uncertainty': 10000,
- 'months_range': '9,11',
+ 'months_range': '1,12',
  'name': 'test_filters_1',
  'query_polygon': 'POLYGON ((-82.74809573102132 36.96082629937069, '
                   '-85.0932989306133 35.63154639485496, -81.0987220521874 '
@@ -34,7 +31,8 @@ filter_set = {'bases_omit': '',
                   '-79.4235769096217 36.34054727735634, -82.74809573102132 '
                   '36.96082629937069))',
  'sampling_protocols_omit': '',
- 'years_range': '2015,2020'}
+ 'use_taxon_geometry': True,
+ 'years_range': '2000,2020'}
 
 ##########################################           def get_GBIF_records(taxon_info, filter_set, working_directory, username, password, email, dwca_download):
 """
@@ -53,7 +51,7 @@ default_coordUncertainty -- distance in meters to use if no coordinate
     Uncertainty is specified for a record.
 outDir -- where to save maps that are exported by this process.
 summary_name -- a short name for some file names.
-sp_geometry -- True or False to use geometry saved with taxon concept when
+use_taxon_geometry -- True or False to use geometry saved with taxon concept when
     filtering records.  Defaults to 'True'.
 dwca_download -- True or False.  False uses the API, which only works when there are
     fewer than a few 100,000 records.  True uses the download method involving
@@ -75,175 +73,53 @@ import sys
 import shutil
 from dwca.read import DwCAReader
 import numpy as np
+timestamp = datetime.now()
 
-
-#############################################################################
-#                              Taxon-concept
-#############################################################################
+# TAXON INFO >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 gbif_id = taxon_info["GBIF_ID"]
-#common_name = concept[1]
-#scientific_name = concept[2]
 #det_dist = concept[3]
-sp_geom =concept[4]
+taxon_polygon =taxon_info["TAXON_EOO"]
 
 
-############################################################################
-#####################    Create Occurrence Database    #####################
-############################################################################
-"""
-Description: Create a database for storing occurrence and taxon concept
-data.  Needs to have spatial querying functionality.
-"""
-makedb1 = datetime.now()
-spdb = spdb
-# Delete the database if it already exists
-if os.path.exists(spdb):
-    os.remove(spdb)
+#  PREP FILTERS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+years = filter_set["years_range"]
+print(years)
+months = filter_set["months_range"]
+print(months)
+latRange = filter_set["lat_range"]
+print(decimalLatitude)
+lonRange = filter_set["lon_range"]
+print(decimalLongitude)
+coordinate = filter_set["has_coordinate_uncertainty"]
+print(coordinate)
+geoIssue = filter_set["geoissue"]
+print(geoIssue)
+country = filter_set["country"]
+print(country)
+query_polygon = filter_set["query_polygon"]
+print(query_polygon)
+use_taxon_geometry = filter_set["use_taxon_geometry"]
+print(use_taxon_geometry)
+dwca_download = filter_set["get_dwca"]
+print(dwca_download)
 
-# Create or connect to the database
-conn = sqlite3.connect(spdb, isolation_level='DEFERRED')
-conn.enable_load_extension(True)
-conn.execute('SELECT load_extension("mod_spatialite")')
-cursor = conn.cursor()
-
-# Make database spatial
-conn.executescript('''SELECT InitSpatialMetaData(1);''')
-conn.commit()
-
-################################################# Create tables
-sql_cdb = """
-        /* Create a table for occurrence records, WITH GEOMETRY */
-        CREATE TABLE IF NOT EXISTS occurrences (
-                occ_id INTEGER NOT NULL PRIMARY KEY,
-                taxon_id INTEGER NOT NULL,
-                basisOfRecord TEXT,
-                issues TEXT,
-                collectionCode TEXT,
-                institutionCode TEXT,
-                datasetName TEXT,
-                identificationQualifier TEXT,
-                source TEXT NOT NULL,
-                request_id TEXT NOT NULL,
-                filter_id TEXT NOT NULL,
-                latitude TEXT,
-                longitude TEXT,
-                coordinateUncertaintyInMeters INTEGER,
-                occurrenceDate TEXT,
-                retrievalDate TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                individualCount INTEGER DEFAULT 1,
-                dataGeneralizations TEXT,
-                remarks TEXT,
-                detection_distance INTEGER,
-                radius_meters INTEGER,
-                footprintWKT TEXT,
-                weight INTEGER DEFAULT 10,
-                weight_notes TEXT,
-                GBIF_download_doi TEXT,
-                    FOREIGN KEY (taxon_id) REFERENCES taxa(taxon_id)
-                    ON UPDATE RESTRICT
-                    ON DELETE NO ACTION);
-
-        SELECT AddGeometryColumn('occurrences', 'geom_xy4326', 4326, 'POINT',
-                                 'XY');
-"""
-cursor.executescript(sql_cdb)
-makedb2 = datetime.now()
-print("Created occurrence db: " + str(makedb2 - makedb1))
-
-requesttime1 = datetime.now()
-
-############################################################################
-###########################   Get Filters   ################################
-############################################################################
-"""
-Retrieve filter parameters from the parameters database.
-"""
-def get_filter(column, where_column, table):
-    '''
-    Get the values of a filter from the parameters database
-
-    Arguments:
-    column -- string name of column to select from.
-    where_column -- string name of column to condition selection on.
-    table -- string name of table to query
-    '''
-    if table == 'gbif_requests':
-        sql = """ SELECT {0} FROM {2} WHERE request_id = '{1}'""".format(column,
-                                                                     where_column,
-                                                                     table)
-    if table == 'gbif_filters':
-        sql = """ SELECT {0} FROM {2} WHERE filter_id = '{1}'""".format(column,
-                                                                     where_column,
-                                                                     table)
-    filter = cursor2.execute(sql).fetchone()[0]
-    return filter
-
-############################# RETRIEVE REQUEST PARAMETERS
-# Up-front filters are an opportunity to lighten the load from the start.
-latRange = get_filter('lat_range', gbif_req_id, 'gbif_requests')
-lonRange = get_filter('lon_range', gbif_req_id, 'gbif_requests')
-years = get_filter('years_range', gbif_req_id, 'gbif_requests')
-months = get_filter('months_range', gbif_req_id, 'gbif_requests')
-geoIssue = get_filter('geoissue', gbif_req_id, 'gbif_requests')
-if geoIssue == 'None':
-    geoIssue = None
-coordinate = get_filter('coordinate', gbif_req_id, 'gbif_requests')
-country = get_filter('country', gbif_req_id, 'gbif_requests')
-if country == "None":
-    country = None
-poly0 = get_filter('geometry', gbif_req_id, 'gbif_requests')
-
-################################################ SORT OUT GEOMETRIES
+# Sort out geometries
 # A geometry could also be stated for the species, assess what to do
 # It could also be that user opted not to use species geometry.
-if sp_geometry == False:
-    sp_geom = None
-if poly0 == None and sp_geom == None:
+if use_taxon_geometry == False:
+    taxon_polygon = None
+if query_polygon == None and taxon_polygon == None:
     poly = None
-elif poly0 != None and sp_geom == None:
-    poly = poly0
-elif poly0 == None and sp_geom != None:
-    poly = sp_geom
-elif poly0 != None and sp_geom != None:
+elif query_polygon != None and taxon_polygon == None:
+    poly = query_polygon
+elif query_polygon == None and taxon_polygon != None:
+    poly = taxon_polygon
+elif query_polygon != None and taxon_polygon != None:
     # Get/use the intersection of the two polygons
-    filter_polygon = shapely.wkt.loads(poly0)
-    sp_polygon = shapely.wkt.loads(sp_geom)
+    filter_polygon = shapely.wkt.loads(query_polygon)
+    sp_polygon = shapely.wkt.loads(taxon_polygon)
     poly_intersection = filter_polygon.intersection(sp_polygon)
     poly = shapely.wkt.dumps(poly_intersection)
-
-###################  RETRIEVE POST-REQUEST FILTER PARAMETERS
-filt_coordUncertainty = get_filter('has_coordinate_uncertainty',
-                                   gbif_filter_id, 'gbif_filters')
-filt_maxcoord = get_filter('max_coordinate_uncertainty', gbif_filter_id,
-                           'gbif_filters')
-filt_collection = get_filter('collection_codes_omit', gbif_filter_id,
-                             'gbif_filters')
-if type(filt_collection) == str:
-    filt_collection = list(filt_collection.split(', '))
-else:
-    filt_collection = []
-filt_instit = get_filter('institutions_omit', gbif_filter_id, 'gbif_filters')
-if type(filt_instit) == str:
-    filt_instit = list(filt_instit.split(', '))
-else:
-    filt_instit = []
-filt_bases = get_filter('bases_omit', gbif_filter_id, 'gbif_filters')
-if type(filt_bases) == str:
-    filt_bases = list(filt_bases.split(', '))
-else:
-    filt_bases = []
-filt_issues = get_filter('issues_omit', gbif_filter_id, 'gbif_filters')
-if type(filt_issues) == str:
-    filt_issues = list(filt_issues.split(', '))
-else:
-    filt_issues = []
-filt_sampling = get_filter('sampling_protocols_omit', gbif_filter_id, 'gbif_filters')
-if type(filt_sampling) == str:
-    filt_sampling = list(filt_sampling.split(', '))
-else:
-    filt_sampling = []
-print("Got request params and sorted out geometry constraints: " + str(datetime.now() - requesttime1))
-requesttime2 = datetime.now()
 
 # List of informative df columns/dictionary keys to keep (used later)
 keeper_keys = ['basisOfRecord', 'individualCount', 'scientificName',
@@ -257,15 +133,11 @@ keeper_keys = ['basisOfRecord', 'individualCount', 'scientificName',
                'occurrenceRemarks', 'datasetName']
 keeper_keys.sort()
 
-############################################################################
-#######################      Get GBIF Records      #########################
-############################################################################
-"""
-Retrieve GBIF records for a species and save appropriate attributes in the
-occurrence database.
-"""
-####################################### HOW MANY RECORDS EXIST TO PULL FROM?
-############################################################################
+print("Got request params and sorted out geometry constraints: " + str(datetime.now() - timestamp))
+timestamp = datetime.now()
+
+
+# GET RECORD COUNT >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # First, find out how many records there are that meet criteria
 occ_search = occurrences.search(gbif_id,
                                 year=years,
@@ -276,16 +148,14 @@ occ_search = occurrences.search(gbif_id,
                                 hasCoordinate=coordinate,
                                 country=country,
                                 geometry=poly)
-occ_count=occ_search['count']
+occ_count=occ_search["count"]
 print(str(occ_count) + " records available")
 
 
-############################################################################
-#                           API DOWNLOAD OPTION
-############################################################################
+# API QUERY >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 if dwca_download == False:
-    # Get occurrences in batches, saving into master list
-    alloccs = []
+    # Get records in batches, saving into master list.
+    all_jsons = []
     batches = range(0, occ_count, 300)
     for i in batches:
         occ_json = occurrences.search(gbif_id,
@@ -300,17 +170,14 @@ if dwca_download == False:
                                       country=country,
                                       geometry=poly)
         occs = occ_json['results']
-        alloccs = alloccs + occs
+        all_jsons = all_jsons + occs
 
-    print("Downloaded records: " + str(datetime.now() - requesttime2))
-
-    ######################################  LOAD JSON RECORDS INTO DATAFRAME
-    ########################################################################
+    # Load records into a data frame
     dfRaw = pd.DataFrame(columns=keeper_keys)
     insertDict = {}
     for x in keeper_keys:
         insertDict[x] = []
-    for x in alloccs:
+    for x in all_jsons:
         present_keys = list(set(x.keys()) & set(keeper_keys))
         for y in present_keys:
             insertDict[y] = insertDict[y] + [str(x[y])]
@@ -321,8 +188,7 @@ if dwca_download == False:
     df0 = dfRaw.append(insertDF, ignore_index=True, sort=False)
     df0copy = df0.copy() # a copy for gbif_fields_returned below
 
-    ###########################################  RENAME & DELETE FIELDS ETC.
-    ########################################################################
+    # Manage the columns in the data frame
     df0.rename(mapper={"gbifID": "occ_id",
                        "decimalLatitude": "latitude",
                        "decimalLongitude": "longitude",
@@ -335,18 +201,23 @@ if dwca_download == False:
     df0['individualCount'].replace(to_replace="UNKNOWN", value=1,
                                    inplace=True)
 
+    print("Downloaded records: " + str(datetime.now() - timestamp))
+    timestamp = datetime.now()
+
+#### <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< RESUME HERE !!!!!
+
     ############################  SUMMARY TABLE OF KEYS/FIELDS RETURNED (SMALL)
     ########################################################################
     # Count entries per attribute(column), reformat as new df with appropriate
     # columns.  Finally, insert into database.
     # NOTE: When pulling from df0copy, only a specified subset of keys are
-    # assessed (keeper_keys).  For a more complete picture, alloccs must be
+    # assessed (keeper_keys).  For a more complete picture, all_jsons must be
     # assessed.  That has historically been very slow.
     """ # Fastest, but least informative method for gbif_fields_returned
     newt = datetime.now()
     df0copy.where(df0copy != 'UNKNOWN', inplace=True)
     df_populated1 = pd.DataFrame(df0copy.count(axis=0).T.iloc[1:])
-    #df_populated1['included(n)'] = df_populated1[0] # Can this be determined from alloccs?  Quickly?
+    #df_populated1['included(n)'] = df_populated1[0] # Can this be determined from all_jsons?  Quickly?
     df_populated1['populated(n)'] = df_populated1[0]
     df_populated2 = df_populated1.filter(items=['included(n)', 'populated(n)'], axis='columns')
     df_populated2.index.name = 'attribute'
@@ -358,7 +229,7 @@ if dwca_download == False:
     The method below provides more information on values returned than the
     one above, but is slow.  Can it be improved to be faster?
     '''
-    keys = [list(x.keys()) for x in alloccs]
+    keys = [list(x.keys()) for x in all_jsons]
     keys2 = set([])
     for x in keys:
         keys2 = keys2 | set(x)
@@ -367,7 +238,7 @@ if dwca_download == False:
     dfK['populated(n)'] = 0
     requestsummarytime1 = datetime.now()
     #####################################  START SLOW
-    for t in alloccs:
+    for t in all_jsons:
         for y in t.keys():
             dfK.loc[y, 'included(n)'] += 1
             try:
@@ -383,6 +254,44 @@ if dwca_download == False:
     dfK.sort_index(inplace=True)
     dfK.index.name = 'attribute'
     dfK.to_sql(name='gbif_fields_returned', con=conn, if_exists='replace')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ############################################################################
 #                   DARWIN CORE ARCHIVE METHOD (email of .zip)

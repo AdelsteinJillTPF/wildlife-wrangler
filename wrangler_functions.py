@@ -168,7 +168,7 @@ def get_EBD_records(taxon_info, filter_set, working_directory,
     #   end of a straight line path, so double precision when subtracting.
     max_distance <- as.integer(ceiling((max_coordinate_uncertainty-2*EBD_gps_precision)/1000))  ### NOT WORKING
 
-    # query -----------------------------------------------------------------
+    # query ------------------------------------------------------------------------
     ebd_data_0 <- EBD_file %>%
       # 1. reference file
       auk_ebd() %>%
@@ -235,6 +235,8 @@ def get_EBD_records(taxon_info, filter_set, working_directory,
     with localconverter(robjects.default_converter + pandas2ri.converter):
         ebd_data = robjects.conversion.ri2py(rdf)
     '''
+
+    # Remove records outside of the polygon of interest.
 
     return ebd_data
 
@@ -704,7 +706,7 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
                               gbif_req_id, gbif_filter_id, default_coordUncertainty,
                               outDir, summary_name, username, password, email,
                               sp_geometry=True, dwca_download=True):
-    """
+    '''
     Retrieves species occurrence records from the GBIF API.  Filters occurrence
     records, buffers the xy points, and saves them in a database.  Finally,
     exports some Shapefiles.
@@ -726,7 +728,7 @@ def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
         fewer than a few 100,000 records.  True uses the download method involving
         your GBIF account and email.  Default is True.  Note: False does not
         provide a download DOI.
-    """
+    '''
     import pandas as pd
     pd.set_option('display.width', 1000)
     import sqlite3
