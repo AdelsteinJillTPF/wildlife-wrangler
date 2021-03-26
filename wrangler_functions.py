@@ -1,5 +1,4 @@
-def get_EBD_records(taxon_info, filter_set, working_directory,
-                    EBD_file, query_name):
+def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_name):
     '''
     Gets eBird records from a copy of the Ebird Basic Dataset that you acquired.
     Primarily runs R code that uses the auk package to query the data set in
@@ -32,6 +31,8 @@ def get_EBD_records(taxon_info, filter_set, working_directory,
     import rpy2.robjects.packages as rpackages
     from rpy2.robjects.vectors import StrVector
     import pandas as pd
+    from datetime import datetime
+    import sqlite3
 
     # import R's utility package, select a mirror for R packages
     utils = rpackages.importr('utils')
@@ -46,6 +47,12 @@ def get_EBD_records(taxon_info, filter_set, working_directory,
     # Some file names
     queried_ebd = working_directory + "tmp_ebd.txt"
     processed_ebd = working_directory + query_name + ".csv"
+    output_db = working_directory + query_name + '.sqlite'
+
+    # Replace None values in fitler_set with "" to fit R code.
+    for x in filter_set.keys():
+        if filter_set[x] == None:
+            filter_set[x] = ""
 
     code = '''
     EBD_file <- "{0}"
@@ -186,7 +193,7 @@ def get_EBD_records(taxon_info, filter_set, working_directory,
       # 4. read text file into r data frame
       read_ebd()
 
-    # prep data frame for python ----------------------------------------
+    # prep data frame for python -----------------------------------------------
     # add column for eBird species code
     ebird_code <- select(filter(ebird_taxonomy, common_name==species),
                          species_code)[[1]]
@@ -238,9 +245,363 @@ def get_EBD_records(taxon_info, filter_set, working_directory,
 
     # Remove records outside of the polygon of interest.
 
+
+    # Summarize the fields that were returned
+    timestamp = datetime.now()
+    df_populated1 = pd.DataFrame(ebd_data.count(axis=0).T.iloc[1:])
+    df_populated1['included(n)'] = len(ebd_data)
+    df_populated1['populated(n)'] = df_populated1[0]
+    df_populated2 = df_populated1.filter(items=['included(n)', 'populated(n)'], axis='columns')
+    df_populated2.index.name = 'attribute'
+    conn = sqlite3.connect(output_db, isolation_level='DEFERRED')
+    df_populated2.to_sql(name='eBird_fields_returned', con=conn, if_exists='replace')
+    print("Summarized fields returned: " + str(datetime.now() - timestamp))
+
     return ebd_data
 
-def MapShapefilePolygons(map_these, title):
+def get_GBIF_records(taxon_info, filter_set, query_name, working_directory,
+                     username, password, email):
+    """
+    Retrieves species occurrence records from the GBIF API.  Filters occurrence
+    records, buffers the xy points, and saves them in a database.  Finally,
+    exports some Shapefiles.
+
+    Arguments:
+    codeDir -- directory of this code repo.
+    taxon_id -- project-specific identifier for the taxon concept.
+    paramdb -- path to the parameter database.
+    output_db -- occurrence record database to be created by this function.
+    gbif_req_id -- GBIF request ID for the process.
+    gbif_filter_id -- GBIF filter ID for the process.
+    default_coordUncertainty -- distance in meters to use if no coordinate
+        Uncertainty is specified for a record.
+    outDir -- where to save maps that are exported by this process.
+    summary_name -- a short name for some file names.
+    use_taxon_geometry -- True or False to use geometry saved with taxon concept when
+        filtering records.  Defaults to 'True'.
+    dwca_download -- True or False.  False uses the API, which only works when there are
+        fewer than a few 100,000 records.  True uses the download method involving
+        your GBIF account and email.  Default is True.  Note: False does not
+        provide a download DOI.
+    """
+    import pandas as pd
+    pd.set_option('display.width', 1000)
+    import sqlite3
+    from pygbif import occurrences
+    import os
+    os.chdir('/')
+    import json
+    import platform
+    import shapely
+    from shapely.wkt import dumps, loads
+    from datetime import datetime
+    import sys
+    import shutil
+    from dwca.read import DwCAReader
+    import numpy as np
+    timestamp = datetime.now()
+
+    # Some prep
+    output_db = working_directory + query_name + '.sqlite'
+    conn = sqlite3.connect(output_db, isolation_level='DEFERRED')
+    cursor = conn.cursor()
+
+    # TAXON INFO >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    gbif_id = taxon_info["GBIF_ID"]
+    #det_dist = concept[3]
+    taxon_polygon =taxon_info["TAXON_EOO"]
+
+
+    #  PREP FILTERS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    years = filter_set["years_range"]
+    print(years)
+    months = filter_set["months_range"]
+    print(months)
+    latRange = filter_set["lat_range"]
+    print(latRange)
+    lonRange = filter_set["lon_range"]
+    print(lonRange)
+    coordinate = filter_set["has_coordinate_uncertainty"]
+    print(coordinate)
+    geoIssue = filter_set["geoissue"]
+    print(geoIssue)
+    country = filter_set["country"]
+    print(country)
+    query_polygon = filter_set["query_polygon"]
+    print(query_polygon)
+    use_taxon_geometry = filter_set["use_taxon_geometry"]
+    print(use_taxon_geometry)
+    dwca_download = filter_set["get_dwca"]
+    print(dwca_download)
+
+    # Sort out geometries
+    # A geometry could also be stated for the species, assess what to do
+    # It could also be that user opted not to use species geometry.
+    if use_taxon_geometry == False:
+        taxon_polygon = None
+    if query_polygon == None and taxon_polygon == None:
+        poly = None
+    elif query_polygon != None and taxon_polygon == None:
+        poly = query_polygon
+    elif query_polygon == None and taxon_polygon != None:
+        poly = taxon_polygon
+    elif query_polygon != None and taxon_polygon != None:
+        # Get/use the intersection of the two polygons
+        filter_polygon = shapely.wkt.loads(query_polygon)
+        sp_polygon = shapely.wkt.loads(taxon_polygon)
+        poly_intersection = filter_polygon.intersection(sp_polygon)
+        poly = shapely.wkt.dumps(poly_intersection)
+
+    # List of informative df columns/dictionary keys to keep (used later)
+    keeper_keys = ['basisOfRecord', 'individualCount', 'scientificName',
+                   'decimalLongitude', 'decimalLatitude',
+                   'coordinateUncertaintyInMeters',
+                   'eventDate', 'issue', 'issues', 'gbifID', 'id',
+                   'dataGeneralizations', 'eventRemarks', 'locality',
+                   'locationRemarks', 'collectionCode',
+                   'samplingProtocol', 'institutionCode', 'establishmentMeans',
+                   'institutionID', 'footprintWKT', 'identificationQualifier',
+                   'occurrenceRemarks', 'datasetName']
+    keeper_keys.sort()
+
+    print("Got request params and sorted out geometry constraints: " + str(datetime.now() - timestamp))
+    timestamp = datetime.now()
+
+
+    # GET RECORD COUNT >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    # First, find out how many records there are that meet criteria
+    occ_search = occurrences.search(gbif_id,
+                                    year=years,
+                                    month=months,
+                                    decimalLatitude=latRange,
+                                    decimalLongitude=lonRange,
+                                    hasGeospatialIssue=geoIssue,
+                                    hasCoordinate=coordinate,
+                                    country=country,
+                                    geometry=poly)
+    record_count=occ_search["count"]
+    print(str(record_count) + " records available")
+
+
+    # API QUERY >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    if dwca_download == False:
+        # Get records in batches, saving into master list.
+        all_jsons = []
+        batches = range(0, record_count, 300)
+        for i in batches:
+            batch = occurrences.search(gbif_id,
+                                          limit=300,
+                                          offset=i,
+                                          year=years,
+                                          month=months,
+                                          decimalLatitude=latRange,
+                                          decimalLongitude=lonRange,
+                                          hasGeospatialIssue=geoIssue,
+                                          hasCoordinate=coordinate,
+                                          country=country,
+                                          geometry=poly)
+            occs = batch['results']
+            all_jsons = all_jsons + occs
+
+        # Load records into a data frame
+        dfRaw = pd.DataFrame(columns=keeper_keys)
+        insertDict = {}
+        for x in keeper_keys:
+            insertDict[x] = []
+        for x in all_jsons:
+            present_keys = list(set(x.keys()) & set(keeper_keys))
+            for y in present_keys:
+                insertDict[y] = insertDict[y] + [str(x[y])]
+            missing_keys = list(set(keeper_keys) - set(x.keys()))
+            for z in missing_keys:
+                insertDict[z] = insertDict[z] + ["UNKNOWN"]
+        insertDF = pd.DataFrame(insertDict)
+        df0 = dfRaw.append(insertDF, ignore_index=True, sort=False)
+        df0copy = df0.copy() # a copy for gbif_fields_returned below
+
+        # Manage the columns in the data frame
+        df0.rename(mapper={"gbifID": "occ_id",
+                           "decimalLatitude": "latitude",
+                           "decimalLongitude": "longitude",
+                           "eventDate": "occurrenceDate"}, inplace=True, axis='columns')
+        df0.drop(["issue", "id"], inplace=True, axis=1)
+        df0['coordinateUncertaintyInMeters'].replace(to_replace="UNKNOWN",
+                                                     value=np.NaN, inplace=True)
+        df0 = df0.astype({'coordinateUncertaintyInMeters': 'float',
+                          'latitude': 'string', 'longitude': 'string'})
+        df0['individualCount'].replace(to_replace="UNKNOWN", value=1,
+                                       inplace=True)
+
+        print("Downloaded records: " + str(datetime.now() - timestamp))
+        timestamp = datetime.now()
+
+        ### WHERE DOES THIS GO? IT CAME FROM THE END OF THE API QUERY SECTION.............?////????????
+        # Summarize the attributes that were returned
+        #    Count entries per attribute(column), reformat as new df with appropriate
+        #   columns.  Finally, insert into database.
+        #    NOTE: When pulling from df0copy, only a specified subset of keys are
+        #    assessed (keeper_keys).  For a more complete picture, all_jsons must be
+        #   assessed.  That has historically been very slow.
+        """ # Fastest, but least informative method for gbif_fields_returned
+        newt = datetime.now()
+        df0copy.where(df0copy != 'UNKNOWN', inplace=True)
+        df_populated1 = pd.DataFrame(df0copy.count(axis=0).T.iloc[1:])
+        #df_populated1['included(n)'] = df_populated1[0] # Can this be determined from all_jsons?  Quickly?
+        df_populated1['populated(n)'] = df_populated1[0]
+        df_populated2 = df_populated1.filter(items=['included(n)', 'populated(n)'], axis='columns')
+        df_populated2.index.name = 'attribute'
+        df_populated2.to_sql(name='gbif_fields_returned', con=conn, if_exists='replace')
+        print("Summarized fields returned: " + str(datetime.now() - newt))
+        """
+        # Slower, but more informative method for gbif_fields_returned
+        '''
+        The method below provides more information on values returned than the
+        one above, but is slow.  Can it be improved to be faster?
+        '''
+        keys = [list(x.keys()) for x in all_jsons]
+        keys2 = set([])
+        for x in keys:
+            keys2 = keys2 | set(x)
+        dfK = pd.DataFrame(index=keys2, columns=['included(n)', 'populated(n)'])
+        dfK['included(n)'] = 0
+        dfK['populated(n)'] = 0
+        timestamp = datetime.now()
+        ####       START SLOW
+        for t in all_jsons:
+            for y in t.keys():
+                dfK.loc[y, 'included(n)'] += 1
+                try:
+                    int(t[y])
+                    dfK.loc[y, 'populated(n)'] += 1
+                except:
+                    if t[y] == None:
+                        pass
+                    elif len(t[y]) > 0:
+                        dfK.loc[y, 'populated(n)'] += 1
+        print("Summarized fields returned: " + str(datetime.now() - timestamp))
+        #######       #####  END SLOW
+        dfK.sort_index(inplace=True)
+        dfK.index.name = 'attribute'
+
+        # Save attribute summary into the output database
+        dfK.to_sql(name='gbif_fields_returned', con=conn, if_exists='replace')
+
+
+    # EMAIL QUERY >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    if dwca_download == True:
+        # Make the data request using the download function.  Results are
+        #   emailed.
+        # First, build a query list.  NoneType values cause problems, so only
+        #   add arguments if their value isn't NoneType.
+        download_filters = ['taxonKey = {0}'.format(gbif_id)]
+        if coordinate != None:
+            download_filters.append('hasCoordinate = {0}'.format(coordinate))
+        if country != None:
+            download_filters.append('country = {0}'.format(country))
+        if years != None:
+            download_filters.append('year >= {0}'.format(years.split(",")[0]))
+            download_filters.append('year <= {0}'.format(years.split(",")[1]))
+        if months != None:
+            download_filters.append('month >= {0}'.format(months.split(",")[0]))
+            download_filters.append('month <= {0}'.format(months.split(",")[1]))
+        poly = None # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Remove and debug
+        if poly != None:
+            download_filters.append('geometry within {0}'.format(poly))
+        if geoIssue != None:
+            download_filters.append('hasGeospatialIssue = {0}'.format(geoIssue))
+        if latRange != None:
+            download_filters.append('decimalLatitude >= {0}'.format(latRange.split(",")[0]))
+            download_filters.append('decimalLatitude <= {0}'.format(latRange.split(",")[1]))
+        if lonRange !=None:
+            download_filters.append('decimalLongitude >= {0}'.format(lonRange.split(",")[0]))
+            download_filters.append('decimalLongitude <= {0}'.format(lonRange.split(",")[1]))
+        bigdown1 = datetime.now()
+        d = occurrences.download(download_filters,
+                                 pred_type='and',
+                                 user = username,
+                                 pwd = password,
+                                 email = email)
+
+        # Get the value of the download key
+        dkey = d[0]
+
+        # Now download the actual zip file containing the Darwin Core files
+        # NOTE: The download can take a while to generate and is not immediately
+        # available once the download_get command has been issued. Use a
+        # while and try loop to make sure the download has succeeded.
+        # The zipdownload variable will be a dictionary of the path,
+        # the file size, and the download key unique code. It can be used
+        # to change the file name, unzip the file, etc.
+        print("Downloading Darwin Core Archive zip file for this species .....")
+        gotit = None
+        while gotit is None:
+            try:
+                zipdownload = occurrences.download_get(key=dkey,
+                                                       path=working_directory)
+                gotit = 1
+                print("Download complete: " + str(datetime.now() - bigdown1))
+            except:
+                wait = datetime.now() - bigdown1
+                if wait.seconds > 60*45:
+                    gotit = 0
+                    print("TIMED OUT -- attempting to proceed anyways")
+                else:
+                    gotit = None
+
+        # Read the relevant files from within the darwin core archive
+        timestamp = datetime.now()
+        with DwCAReader(working_directory + dkey + '.zip') as dwca:
+            dfRaw = dwca.pd_read('occurrence.txt', low_memory=False)
+            citations = dwca.open_included_file('citations.txt').read()
+            rights = dwca.open_included_file('rights.txt').read()
+            doi = dwca.metadata.attrib["packageId"]
+
+        df0 = dfRaw.filter(items=keeper_keys, axis=1)
+
+        # Manage fields (delete and rename)
+        df0.rename(mapper={"id": "occ_id",
+                           "decimalLatitude": "latitude",
+                           "decimalLongitude": "longitude",
+                           "issue": "issues",
+                           "eventDate": "occurrenceDate"}, inplace=True, axis='columns')
+        df0['coordinateUncertaintyInMeters'].replace(to_replace="UNKNOWN",
+                                                     value=np.NaN, inplace=True)
+        df0['latitude'] = df0['latitude'].astype(str)
+        df0['longitude'] = df0['longitude'].astype(str)
+        df0['individualCount'].replace(to_replace="UNKNOWN", value=1, inplace=True)
+        print("Downloaded and loaded records: " + str(datetime.now() - timestamp))
+
+        # Summarize the fields returned
+        #   Count entries per atrribute(column), reformat as new df with appropriate
+        #   columns.  Finally, insert into database.
+        timestamp = datetime.now()
+        df_populated1 = pd.DataFrame(dfRaw.count(axis=0).T.iloc[1:])
+        df_populated1['included(n)'] = len(dfRaw)
+        df_populated1['populated(n)'] = df_populated1[0]
+        df_populated2 = df_populated1.filter(items=['included(n)', 'populated(n)'], axis='columns')
+        df_populated2.index.name = 'attribute'
+        conn = sqlite3.connect(output_db, isolation_level='DEFERRED')
+        df_populated2.to_sql(name='gbif_fields_returned', con=conn, if_exists='replace')
+        print("Summarized fields returned: " + str(datetime.now() - timestamp))
+
+        # Record DWCA metadata
+        #   Store the value summary for the selected fields in a table.
+        timestamp = datetime.now()
+        cursor.executescript("""CREATE TABLE GBIF_download_info
+                                (download_key TEXT, doi TEXT, citations TEXT,
+                                 rights TEXT);""")
+        cursor.execute('''INSERT INTO GBIF_download_info (doi, citations,
+                                                          rights, download_key)
+                          VALUES ("{0}", "{1}", "{2}", "{3}")'''.format(doi,
+                                                                  citations,
+                                                                  rights,
+                                                                  dkey))
+        conn.close()
+        print("Stored GBIF Download DOI etc.: " + str(datetime.now() - timestamp))
+
+        return df0
+
+def map_shapefiles(map_these, title):
     """
     Displays shapefiles on a simple CONUS basemap.  Maps are plotted in the order
     provided so put the top map last in the list.  You can specify a column
@@ -347,7 +708,7 @@ def MapShapefilePolygons(map_these, title):
     plt.title(title, fontsize=20, pad=-40, backgroundcolor='w')
     return
 
-def build_output_db(spdb):
+def build_output_db(output_database):
     """
     Create a database for storing occurrence and taxon concept data.
     The column names that are "camel case" are Darwin Core attributes, whereas
@@ -357,7 +718,7 @@ def build_output_db(spdb):
 
     Parameters
     ----------
-    spdb : Path for sqlite database to create; string.
+    output_database : Path for sqlite database to create; string.
 
     Returns
     -------
@@ -367,23 +728,23 @@ def build_output_db(spdb):
     import sqlite3
 
     # Delete the database if it already exists
-    if os.path.exists(spdb):
-        os.remove(spdb)
+    if os.path.exists(output_database):
+        os.remove(output_database)
 
     # Create or connect to the database
-    conn = sqlite3.connect(spdb, isolation_level='DEFERRED')
+    conn = sqlite3.connect(output_database, isolation_level='DEFERRED')
     cursor = conn.cursor()
 
     # Create a table for occurrence records.
     sql_cdb = """
             CREATE TABLE IF NOT EXISTS occurrences (
                     record_id INTEGER NOT NULL PRIMARY KEY,
-                    request_id TEXT NOT NULL,
-                    filter_id TEXT NOT NULL,
+                    filter_set_name TEXT NOT NULL,
+                    taxon_info_name TEXT NOT NULL,
                     source TEXT NOT NULL,
                     retrieval_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    detection_distance INTEGER,
-                    radius_meters INTEGER,
+                    detection_distance_m INTEGER,
+                    radius_m INTEGER,
                     GBIF_download_doi TEXT,
                     general_remarks TEXT,
                     weight INTEGER DEFAULT 10,
@@ -432,7 +793,7 @@ def build_output_db(spdb):
     cursor.executescript(sql_cdb)
     return
 
-def getGBIFcode(name, rank='species'):
+def get_GBIF_code(name, rank='species'):
     """
     Returns the GBIF species code for a scientific name.
 
@@ -442,7 +803,7 @@ def getGBIFcode(name, rank='species'):
     key = species.name_backbone(name = name, rank='species')['usageKey']
     return key
 
-def getRecordDetails(key):
+def get_record_details(key):
     """
     Returns a dictionary holding all GBIF details about the record.
 
@@ -594,7 +955,7 @@ def drop_duplicates_latlongdate(df):
     print(str(initial_length - len(df2)) + " duplicate records dropped: {0}".format(duptime))
     return df2
 
-def exportSHP(database, table, column, outFile):
+def export_shapefile(database, table, column, outFile):
     '''
     Exports a spatialite geometry column as a shapefile.
 
@@ -625,7 +986,7 @@ def exportSHP(database, table, column, outFile):
     conn.close()
     print("Exported shapefile: " + str(datetime.now() - exporttime1))
 
-def ccw_wkt_from_shp(shapefile, out_txt):
+def ccw_wkt_from_shapefile(shapefile, out_txt):
     """
     Creates wkt with coordinates oriented counter clockwise for a given shapefile.
     Shapefiles are oriented clockwise, which is incompatible with spatial queries

@@ -1,3 +1,60 @@
+import pandas as pd
+import sqlite3
+
+EBD = pd.read_csv("T:/Temp/ebird.csv")
+GBIF = pd.read_csv("T:/Temp/gbif.csv")
+output_database = "T:/Occurrence_Records/withRTest2.sqlite"
+
+def apply_filters(EBD, GBIF, output_database):
+    '''
+    Summarizes the values in the data frames, apply filters, summarize what
+        values persisted after filtering.  Insert results into the output db.
+
+    PARAMETERS
+    ebd : a data frame of records from eBird
+    gbif : a data frame of records from GBIF
+    output_database : path to the output database
+
+    RETURNS
+    filtered_records : a data frame of filtered records.
+    '''
+    return None
+
+# Add the data frames to a table >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+# Use the occurrence_records table as a template
+conn = sqlite3.connect(output_database, isolation_level='DEFERRED')
+cursor = conn.cursor()
+db_0 = conn.execute("SELECT * FROM occurrences;")
+
+# Prep each data frame
+ebd_0 = EBD
+gbif_0 = GBIF
+
+
+# Create any new columns needed
+df8["remarks"] = df8['locality'] + ";" + df8['eventRemarks'] + ";" + df8['locationRemarks'] + ";" + df8['occurrenceRemarks']
+df8["taxon_id"] = taxon_id
+df8["request_id"] = gbif_req_id
+df8["filter_id"] = gbif_filter_id
+df8["retrievalDate"] = datetime.now()
+df8["detection_distance"] = det_dist
+df8["radius_meters"] = df8["detection_distance"] + df8["coordinateUncertaintyInMeters"]
+df8["source"] = "gbif"
+if dwca_download == True:
+    df8["GBIF_download_doi"] = doi
+else:
+    df8["GBIF_download_doi"] = "bypassed"
+df8["weight"] = 10
+df8["weight_notes"] = ""
+df8.drop(labels=["scientificName", "eventRemarks", "locality",
+                 "locationRemarks", "institutionID", "occurrenceRemarks"],
+                 inplace=True, axis=1)
+print("Calculated new columns, deleted some too: " + str(datetime.now() - newstime))
+
+
+
+
+# Tally records per value for each column >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ############################################# SUMMARY OF VALUES RETURNED
 ########################################################################
 # Create a table for storing unique attribute values that came back.
@@ -103,21 +160,11 @@ print("Created summary table of request results: " + str(datetime.now() - summar
 ########################################################################
 moss = df0.groupby(['institutionCode', 'collectionCode', 'datasetName'])[['occ_id']].size()
 moss.to_sql(name='pre_filter_source_counts', con = conn, if_exists='replace')
-##################    is the above in the right place?  should it be after code below? ???????????????????????????????
 
 
 
 
-###############################################  ADD SOME DEFAULT VALUES
-########################################################################
-if default_coordUncertainty != False:
-    df0.fillna(value={'coordinateUncertaintyInMeters': default_coordUncertainty},
-               inplace=True)
-df0.fillna(value={'individualCount': int(1)}, inplace=True)
-
-
-################################################################  FILTER
-########################################################################
+# Filter the data frame >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 fiddlertime = datetime.now()
 if filt_coordUncertainty == 1:
     df1 = df0[pd.isnull(df0['coordinateUncertaintyInMeters']) == False]
@@ -148,29 +195,7 @@ del df7
 print("Performed post-request filtering: " + str(datetime.now() - fiddlertime))
 newstime = datetime.now()
 
-# Create any new columns needed
-df8["remarks"] = df8['locality'] + ";" + df8['eventRemarks'] + ";" + df8['locationRemarks'] + ";" + df8['occurrenceRemarks']
-df8["taxon_id"] = taxon_id
-df8["request_id"] = gbif_req_id
-df8["filter_id"] = gbif_filter_id
-df8["retrievalDate"] = datetime.now()
-df8["detection_distance"] = det_dist
-df8["radius_meters"] = df8["detection_distance"] + df8["coordinateUncertaintyInMeters"]
-df8["source"] = "gbif"
-if dwca_download == True:
-    df8["GBIF_download_doi"] = doi
-else:
-    df8["GBIF_download_doi"] = "bypassed"
-df8["weight"] = 10
-df8["weight_notes"] = ""
-df8.drop(labels=["scientificName", "eventRemarks", "locality",
-                 "locationRemarks", "institutionID", "occurrenceRemarks"],
-                 inplace=True, axis=1)
-print("Calculated new columns, deleted some too: " + str(datetime.now() - newstime))
-
-
-#########################################################  HANDLE DUPLICATES
-############################################################################
+# Remove duplicates >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # Find out whether or not to drop duplicates.
 OKsql = """SELECT duplicates_OK FROM gbif_filters
                WHERE filter_id = '{0}';""".format(gbif_filter_id)
@@ -187,6 +212,13 @@ if duplicates_OK == "True":
     print("DUPLICATES ON LATITUDE, LONGITUDE, DATE-TIME INCLUDED")
 
 
+# Add default values >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+if default_coordUncertainty != False:
+    df0.fillna(value={'coordinateUncertaintyInMeters': default_coordUncertainty},
+               inplace=True)
+df0.fillna(value={'individualCount': int(1)}, inplace=True)
+
+# Tally records per value again >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     ################################## SUMMARY OF VALUES KEPT (FILTER; JSON)
     ########################################################################
     kepttime = datetime.now()
@@ -217,3 +249,31 @@ if duplicates_OK == "True":
                   VALUES ("filter", "{0}", "{1}");""".format(x, vals)
         cursor.execute(stmt)
     print("Summarized unique values retained: " + str(datetime.now() - kepttime))
+
+
+
+# Insert filtered data frame into occurrence_records table >>>>>>>>>>>>>>>>>>>>>
+biggin = datetime.now()
+'''  # This is an alternate way to insert records
+sql1 = """INSERT INTO occurrences ('occ_id', 'taxon_id', 'source',
+                                   'latitude', 'longitude',
+                                   'coordinateUncertaintyInMeters',
+                                   'occurrenceDate', 'request_id',
+                                   'filter_id', 'generalizations',
+                                   'remarks')
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"""
+for x in df9.index:
+    insert2 = [df9.loc[x,"id"], taxon_id, df9.loc[x,"source"],
+               df9.loc[x,"decimalLatitude"], df9.loc[x,"decimalLongitude"],
+               df9.loc[x,"coordinateUncertaintyInMeters"],
+               df9.loc[x,"eventDate"], request_id, filter_id,
+               df9.loc[x,"dataGeneralizations"], df9.loc[x,"remarks"]]
+    cursor.execute(sql1, [(insert2)])
+conn.commit()
+'''
+df9.to_sql(name='occurrences', con = conn, if_exists='replace',
+           chunksize=2000)
+sql_toad = '''SELECT AddGeometryColumn('occurrences', 'geom_xy4326', 4326,
+                                       'POINT', 'XY');'''
+cursor.execute(sql_toad)
+print("Inserted records into table: " + str(datetime.now() - biggin))
