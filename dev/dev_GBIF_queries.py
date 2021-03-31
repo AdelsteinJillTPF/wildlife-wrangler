@@ -65,6 +65,5 @@ print("Notebook run " + str(t1))
 print(output_db)
 
 
-
 gbif_data = get_GBIF_records(taxon_info, filter_set, working_directory, username, password, email)
 gbif_data.to_csv("T:/Temp/gbif.csv")
