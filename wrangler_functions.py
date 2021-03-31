@@ -659,6 +659,10 @@ def apply_filters(ebird_data, gbif_data, filter_set, taxon_info, working_directo
     RETURNS
     filtered_records : a data frame of filtered records.
     '''
+    import sqlite3
+    import pandas as pd
+    from datetime import datetime
+
     # Create or connect to the database
     output_database = working_directory + query_name + ".sqlite"
     conn = sqlite3.connect(output_database, isolation_level='DEFERRED')
@@ -756,7 +760,7 @@ def apply_filters(ebird_data, gbif_data, filter_set, taxon_info, working_directo
                 .reset_index(drop=True))
 
     if filter_set["duplicates_OK"] == False:
-        records7 = functions.drop_duplicates_latlongdate(records6)
+        records7 = drop_duplicates_latlongdate(records6)
 
     if filter_set["duplicates_OK"] == True:
         records7 = records6.copy()
@@ -781,7 +785,10 @@ def apply_filters(ebird_data, gbif_data, filter_set, taxon_info, working_directo
     summary_df.to_sql(name='attribute_value_counts', con = conn, if_exists='replace')
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  SAVE
-    records6.to_sql(name='occurrence_records', con = conn, if_exists='replace')
+    # Reformat data to strings and insert into db.
+    records6.applymap(str).to_sql(name='occurrence_records', con = conn,
+                                  if_exists='replace')
+    conn.close()
     return None
 
 def map_shapefiles(map_these, title):

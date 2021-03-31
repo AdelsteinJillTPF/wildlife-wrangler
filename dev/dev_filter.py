@@ -60,6 +60,11 @@ def apply_filters(ebird_data, gbif_data, filter_set, taxon_info, working_directo
     conn = sqlite3.connect(output_database, isolation_level='DEFERRED')
     cursor = conn.cursor()
 
+    # Prep filter set dictionary
+    # Replace empty strings with None
+    for x in filter_set.keys():
+        if filter_set[x] == "" or filter_set[x] == None:
+            filter_set[x] = []
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  COMBINE DATA FRAMES
     # Concatenate the gbif and ebird tables
