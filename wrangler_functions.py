@@ -33,6 +33,7 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
     import pandas as pd
     from datetime import datetime
     import sqlite3
+    import geopandas as gpd
 
     # import R's utility package, select a mirror for R packages
     utils = rpackages.importr('utils')
@@ -54,6 +55,7 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
         if filter_set[x] == None:
             filter_set[x] = ""
 
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< R CODE
     code = '''
     EBD_file <- "{0}"
     queried_ebd <- "{1}"
@@ -223,7 +225,7 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
     robjects.r(code)
 
     # Read output data frame
-    ebd_data = pd.read_csv(processed_ebd)
+    ebd_data_0 = pd.read_csv(processed_ebd)
     '''
     This should eventually be usable (or something similar) to avoid having to write
     the R data frame and then read it in with pandas.  It is supposed to be
@@ -240,33 +242,42 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
     from rpy2.robjects import default_converter
     from rpy2.robjects.conversion import localconverter
     with localconverter(robjects.default_converter + pandas2ri.converter):
-        ebd_data = robjects.conversion.ri2py(rdf)
+        ebd_data_0 = robjects.conversion.ri2py(rdf)
     '''
 
-    # Remove records outside of the polygon of interest.
-    """    ################################################ SORT OUT GEOMETRIES
-        # A geometry could also be stated for the species, assess what to do
-        # It could also be that user opted not to use species geometry.
-        if sp_geometry == False:
-            sp_geom = None
-        if poly0 == None and sp_geom == None:
-            poly = None
-        elif poly0 != None and sp_geom == None:
-            poly = poly0
-        elif poly0 == None and sp_geom != None:
-            poly = sp_geom
-        elif poly0 != None and sp_geom != None:
-            # Get/use the intersection of the two polygons
-            filter_polygon = shapely.wkt.loads(poly0)
-            sp_polygon = shapely.wkt.loads(sp_geom)
-            poly_intersection = filter_polygon.intersection(sp_polygon)
-            poly = shapely.wkt.dumps(poly_intersection)
-    """
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  APPLY SPATIAL FILTER
+    # Make data frame spatial
+    gdf = gpd.GeoDataFrame(ebd_data_0,
+                           geometry=gpd.points_from_xy(ebd_data_0['longitude'],
+                                                             ebd_data_0['latitude']))
+
+    #   It could also be that user opted not to use species geometry.
+    if filter_set['use_taxon_geometry'] == False:
+        EOO = None
+
+    # A geometry could be stated for the species, assess what to do
+    EOO = taxon_info["TAXON_EOO"]
+    AOI = filter_set["query_polygon"]
+    if AOI is None and EOO is None:
+        filter_polygon = None
+    elif AOI is not None and EOO is None:
+        filter_polygon = shapely.wkt.loads(AOI)
+    elif AOI is None and EOO is not None:
+        filter_polygon = shapely.wkt.loads(EOO)
+    elif AOI is not None and EOO is not None:
+        # Get/use the intersection of the two polygons in this case
+        AOI_polygon = shapely.wkt.loads(AOI)
+        EOO_polygon = shapely.wkt.loads(EOO)
+        filter_polygon = AOI_polygon.intersection(EOO_polygon)
+
+    # Find which records have coordinates that fall within the polygon
+    if filter_polygon is not None:
+        ebd_gdf = gdf[gdf["geometry"].within(filter_polygon)]
 
     # Summarize the fields that were returned
     timestamp = datetime.now()
-    df_populated1 = pd.DataFrame(ebd_data.count(axis=0).T.iloc[1:])
-    df_populated1['included(n)'] = len(ebd_data)
+    df_populated1 = pd.DataFrame(ebd_data_0.count(axis=0).T.iloc[1:])
+    df_populated1['included(n)'] = len(ebd_data_0)
     df_populated1['populated(n)'] = df_populated1[0]
     df_populated2 = df_populated1.filter(items=['included(n)', 'populated(n)'], axis='columns')
     df_populated2.index.name = 'attribute'
@@ -282,7 +293,8 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
     records0 = pd.DataFrame(columns=column_names)
 
     # Rename and filter columns to be compatible with the template
-    ebd_data_1 = (ebd_data.rename({'eBird_sp_code': 'ebird_id',
+    ebd_data_1 = (ebd_gdf.drop('geometry')
+                  .rename({'eBird_sp_code': 'ebird_id',
                                    'global_unique_identifier': 'record_id',
                                    'latitude': 'decimalLatitude',
                                    'longitude': 'decimalLongitude',
@@ -365,13 +377,13 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
     # It could also be that user opted not to use species geometry.
     if use_taxon_geometry == False:
         taxon_polygon = None
-    if query_polygon == None and taxon_polygon == None:
+    if query_polygon is None and taxon_polygon is None:
         poly = None
-    elif query_polygon != None and taxon_polygon == None:
+    elif query_polygon is not None and taxon_polygon is None:
         poly = query_polygon
-    elif query_polygon == None and taxon_polygon != None:
+    elif query_polygon is None and taxon_polygon is not None:
         poly = taxon_polygon
-    elif query_polygon != None and taxon_polygon != None:
+    elif query_polygon is not None and taxon_polygon is not None:
         # Get/use the intersection of the two polygons
         filter_polygon = shapely.wkt.loads(query_polygon)
         sp_polygon = shapely.wkt.loads(taxon_polygon)
@@ -669,8 +681,13 @@ def apply_filters(ebird_data, gbif_data, filter_set, taxon_info, working_directo
     cursor = conn.cursor()
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  COMBINE DATA FRAMES
-    # Concatenate the gbif and ebird tables
-    records3 = pd.concat([ebird_data, gbif_data])
+    if ebird_data is None:
+        records3 = gbif_data
+    if gbif_data is None:
+        records3 = ebird_data
+    if gbif_data is not None and ebird_data is not None:
+        # Concatenate the gbif and ebird tables
+        records3 = pd.concat([ebird_data, gbif_data])
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  SUMMARIZE VALUES
     timestamp = datetime.now()
@@ -706,9 +723,16 @@ def apply_filters(ebird_data, gbif_data, filter_set, taxon_info, working_directo
         result = pd.concat(attributes)
         return result
 
-    # Store summary in a dataframe
+    # Store value summary in a dataframe
     acquired = summarize_values(dataframe=records3, step='acquired')
     print("Summarized values acquired: " + str(datetime.now() - timestamp))
+
+    # Summarize sources
+    source_df1 = records3[['institutionID', 'collectionCode', 'datasetName', 'record_id']]
+    source_summary1 = (source_df1
+                       .groupby('institutionID', 'collectionCode', 'datasetName')
+                       .size()
+                       .reset_index(name='acquired'))
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  FILTER
     timestamp = datetime.now()
@@ -770,7 +794,7 @@ def apply_filters(ebird_data, gbif_data, filter_set, taxon_info, working_directo
     # Spatial filtering happens in the get functions (ebird and gbif), not here.
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  SUMMARIZE VALUES AGAIN
-    # Store summary in a dataframe
+    # Store value summary in a dataframe
     retained = summarize_values(dataframe=records7, step='retained')
 
     # Concat acquired and retained data frames
@@ -781,8 +805,27 @@ def apply_filters(ebird_data, gbif_data, filter_set, taxon_info, working_directo
     summary_df = summary_df[['attribute', 'value', 'acquired', 'removed',
                              'retained']]
 
-    # Save the summary in the output database
+    # Summarize sources
+    source_df2 = records7[['institutionID', 'collectionCode', 'datasetName', 'record_id']]
+    source_summary1 = (source_df2
+                       .groupby('institutionID', 'collectionCode', 'datasetName')
+                       .size()
+                       .reset_index(name='retained'))
+
+    # Concat acquired and retained source summary data frames
+    source_summaries = pd.merge(source_summary1, source_summary2,
+                                on=['institutionID', 'collectionCode', 'datasetName'],
+                                how='inner')
+
+    # Calculate a difference column
+    source_summaries['removed'] = source_summaries['acquired'] - source_summaries['retained']
+    source_summaries = source_summaries[['institutionID', 'collectionCode',
+                                         'datasetName', 'acquired', 'removed',
+                                         'retained']]
+
+    # Save the summaries in the output database
     summary_df.to_sql(name='attribute_value_counts', con = conn, if_exists='replace')
+    source_sumaries.to_sql(name='records_per_source', con = conn, if_exists='replace')
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  SAVE
     # Reformat data to strings and insert into db.

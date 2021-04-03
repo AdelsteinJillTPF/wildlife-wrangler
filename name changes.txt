@@ -2,4 +2,5 @@ name changes ----
 
 occurrences --> occurrence_records in output database
 has_coordinate_uncertainty -- from 0,1 to True, False
-query_polygon --> AOI or something
+query_polygon --> AOI or something     mask?
+taxon_polygon --> taxon EOO or potential EOO
