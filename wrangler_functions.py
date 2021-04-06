@@ -1,3 +1,115 @@
+# occurrece records table datatypes
+attribute_data_types = {'GBIF_download_doi': 'str', 'accessRights': 'str',
+             'basisOfRecord': 'str', 'bibliographicCitation': 'str',
+             'collectionCode': 'str', 'coordinateUncertaintyInMeters': 'float',
+             'dataGeneralizations': 'str', 'datasetName': 'str',
+             'decimalLatitude': 'str', 'decimalLongitude': 'str',
+             'detection_distance_m': 'int', 'ebird_id': 'str',
+             'establishmentMeans': 'str', 'eventDate': 'str', 'eventRemarks': 'str',
+             'filter_set_name': 'str', 'footprintSRS': 'str', 'footprintWKT': 'str',
+             'gbif_id': 'str', 'general_remarks': 'str', 'georeferenceProtocol': 'str',
+             'georeferenceRemarks': 'str', 'georeferenceVerificationStatus': 'str',
+             'georeferencedBy': 'str', 'habitat': 'str',
+             'identificationQualifier': 'str', 'identifiedBy': 'str',
+             'identifiedRemarks': 'str', 'individualCount': 'int',
+             'informationWitheld': 'str', 'institutionID': 'str', 'issues': 'str',
+             'license': 'str', 'locality': 'str', 'locationAccordingTo': 'str',
+             'locationRemarks': 'str', 'modified': 'str', 'occurrenceRemarks': 'str',
+             'occurrenceStatus': 'str', 'radius_m': 'int', 'record_id': 'int',
+             'recordedBy': 'str', 'retrieval_date': 'str', 'samplingProtocol': 'str',
+             'scientificName': 'str', 'source': 'str', 'taxonConceptID': 'int',
+             'taxon_info_name': 'str', 'verbatimLocality': 'str', 'weight': 'int',
+             'weight_notes': 'str'}
+
+def build_output_database(output_database):
+    """
+    Create a database for storing occurrence and taxon concept data.
+    The column names that are "camel case" are Darwin Core attributes, whereas
+    lower case names containing "_" between words are not.  Not all Darwin
+    Core attributes are included.  Only those that could be useful for filtering
+    and assigning weights are included.
+
+    Parameters
+    ----------
+    output_database : Path for sqlite database to create; string.
+
+    Returns
+    -------
+    Nothing.
+    """
+    import os
+    import sqlite3
+
+    # Delete the database if it already exists
+    if os.path.exists(output_database):
+        os.remove(output_database)
+
+    # Create or connect to the database
+    conn = sqlite3.connect(output_database, isolation_level='DEFERRED')
+    cursor = conn.cursor()
+
+    # Create a table for occurrence records.
+    sql_cdb = """
+            CREATE TABLE IF NOT EXISTS occurrence_records (
+                    record_id INTEGER NOT NULL PRIMARY KEY,
+                    filter_set_name TEXT NOT NULL,
+                    taxon_info_name TEXT NOT NULL,
+                    gbif_id TEXT,
+                    ebird_id TEXT,
+                    source TEXT NOT NULL,
+                    retrieval_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    detection_distance_m INTEGER,
+                    radius_m INTEGER,
+                    GBIF_download_doi TEXT,
+                    general_remarks TEXT,
+                    weight INTEGER DEFAULT 10,
+                    weight_notes TEXT,
+
+                    accessRights TEXT,
+                    bibliographicCitation TEXT,
+                    basisOfRecord TEXT,
+                    collectionCode TEXT,
+                    coordinateUncertaintyInMeters INTEGER,
+                    dataGeneralizations TEXT,
+                    datasetName TEXT,
+                    decimalLatitude TEXT,
+                    decimalLongitude TEXT,
+                    establishmentMeans TEXT,
+                    eventDate TEXT,
+                    eventRemarks TEXT,
+                    footprintWKT TEXT,
+                    footprintSRS TEXT,
+                    georeferencedBy TEXT,
+                    georeferenceProtocol TEXT,
+                    georeferenceVerificationStatus TEXT,
+                    georeferenceRemarks TEXT,
+                    habitat TEXT,
+                    identifiedBy TEXT,
+                    identifiedRemarks TEXT,
+                    identificationQualifier TEXT,
+                    individualCount INTEGER DEFAULT 1,
+                    informationWitheld TEXT,
+                    institutionID TEXT,
+                    issues TEXT,
+                    license TEXT,
+                    locality TEXT,
+                    locationAccordingTo TEXT,
+                    locationRemarks TEXT,
+                    modified TEXT,
+                    occurrenceStatus TEXT,
+                    occurrenceRemarks TEXT,
+                    recordedBy TEXT,
+                    samplingProtocol TEXT,
+                    scientificName TEXT,
+                    taxonConceptID INTEGER NOT NULL,
+                    verbatimLocality TEXT,
+                        FOREIGN KEY (taxonConceptID) REFERENCES taxa(taxonConceptID)
+                        ON UPDATE RESTRICT
+                        ON DELETE NO ACTION);
+    """
+    cursor.executescript(sql_cdb)
+    return
+
 def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_name):
     '''
     Gets eBird records from a copy of the Ebird Basic Dataset that you acquired.
@@ -34,6 +146,8 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
     from datetime import datetime
     import sqlite3
     import geopandas as gpd
+    import shapely
+    import numpy as np
 
     # import R's utility package, select a mirror for R packages
     utils = rpackages.importr('utils')
@@ -249,7 +363,7 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
     # Make data frame spatial
     gdf = gpd.GeoDataFrame(ebd_data_0,
                            geometry=gpd.points_from_xy(ebd_data_0['longitude'],
-                                                             ebd_data_0['latitude']))
+                                                       ebd_data_0['latitude']))
 
     #   It could also be that user opted not to use species geometry.
     if filter_set['use_taxon_geometry'] == False:
@@ -293,19 +407,24 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
     records0 = pd.DataFrame(columns=column_names)
 
     # Rename and filter columns to be compatible with the template
-    ebd_data_1 = (ebd_gdf.drop('geometry')
+    print(ebd_gdf.columns)
+    ebd_data_1 = (ebd_gdf.drop(columns=['geometry'])
                   .rename({'eBird_sp_code': 'ebird_id',
-                                   'global_unique_identifier': 'record_id',
-                                   'latitude': 'decimalLatitude',
-                                   'longitude': 'decimalLongitude',
-                                   'observation_count': 'individualCount',
-                                   'observation_date': 'eventDate',
-                                   'project_code': 'collectionCode',
-                                   'protocol_type': 'samplingProtocol'}, axis=1)
+                           'global_unique_identifier': 'record_id',
+                           'latitude': 'decimalLatitude',
+                           'longitude': 'decimalLongitude',
+                           'observation_count': 'individualCount',
+                           'observation_date': 'eventDate',
+                           'project_code': 'collectionCode',
+                           'protocol_type': 'samplingProtocol'}, axis=1)
                  .filter(records0.columns,axis=1))
 
     # Add EBD records to template
-    ebd_data_2 = records0.combine_first(ebd_data_1)
+    ebd_data_2 = (records0
+                  .combine_first(ebd_data_1)
+                  )
+    print(ebd_data_2.dtypes)
+    print(ebd_data_2.tail(1).T)
 
     return ebd_data_2
 
@@ -526,7 +645,14 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
                   .filter(records0.columns,axis=1))
 
         # Add GBIF records to template
-        records2 = records0.combine_first(records1)
+        records2 = (records0
+                    .combine_first(records1)
+                    .fillna({"detection_distance_m": np.nan,
+                             "radius_m": np.nan,
+                             "coordinateUncertaintyInMeters": np.nan,
+                             "individualCount": np.nan,
+                             "taxonConceptID": np.nan})
+                    .astype('str'))
         return records2
 
 
@@ -653,7 +779,14 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
                   .filter(records0.columns,axis=1))
 
         # Add GBIF records to template
-        records2 = records0.combine_first(records1)
+        records2 = (records0
+                    .combine_first(records1)
+                    .fillna({"detection_distance_m": np.nan,
+                             "radius_m": np.nan,
+                             "coordinateUncertaintyInMeters": np.nan,
+                             "individualCount": np.nan,
+                             "taxonConceptID": np.nan})
+                    .astype('str'))
         return records2
 
 def apply_filters(ebird_data, gbif_data, filter_set, taxon_info, working_directory, query_name):
@@ -729,8 +862,9 @@ def apply_filters(ebird_data, gbif_data, filter_set, taxon_info, working_directo
 
     # Summarize sources
     source_df1 = records3[['institutionID', 'collectionCode', 'datasetName', 'record_id']]
+    source_df1.to_csv("T:/temp/source_df1.csv")
     source_summary1 = (source_df1
-                       .groupby('institutionID', 'collectionCode', 'datasetName')
+                       .groupby(by=['institutionID', 'collectionCode', 'datasetName'])
                        .size()
                        .reset_index(name='acquired'))
 
@@ -807,8 +941,8 @@ def apply_filters(ebird_data, gbif_data, filter_set, taxon_info, working_directo
 
     # Summarize sources
     source_df2 = records7[['institutionID', 'collectionCode', 'datasetName', 'record_id']]
-    source_summary1 = (source_df2
-                       .groupby('institutionID', 'collectionCode', 'datasetName')
+    source_summary2 = (source_df2
+                       .groupby(by=['institutionID', 'collectionCode', 'datasetName'])
                        .size()
                        .reset_index(name='retained'))
 
@@ -825,7 +959,7 @@ def apply_filters(ebird_data, gbif_data, filter_set, taxon_info, working_directo
 
     # Save the summaries in the output database
     summary_df.to_sql(name='attribute_value_counts', con = conn, if_exists='replace')
-    source_sumaries.to_sql(name='records_per_source', con = conn, if_exists='replace')
+    source_summaries.to_sql(name='sources', con = conn, if_exists='replace')
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  SAVE
     # Reformat data to strings and insert into db.
@@ -939,95 +1073,6 @@ def map_shapefiles(map_these, title):
 
     # Title
     plt.title(title, fontsize=20, pad=-40, backgroundcolor='w')
-    return
-
-def build_output_database(output_database):
-    """
-    Create a database for storing occurrence and taxon concept data.
-    The column names that are "camel case" are Darwin Core attributes, whereas
-    lower case names containing "_" between words are not.  Not all Darwin
-    Core attributes are included.  Only those that could be useful for filtering
-    and assigning weights are included.
-
-    Parameters
-    ----------
-    output_database : Path for sqlite database to create; string.
-
-    Returns
-    -------
-    Nothing.
-    """
-    import os
-    import sqlite3
-
-    # Delete the database if it already exists
-    if os.path.exists(output_database):
-        os.remove(output_database)
-
-    # Create or connect to the database
-    conn = sqlite3.connect(output_database, isolation_level='DEFERRED')
-    cursor = conn.cursor()
-
-    # Create a table for occurrence records.
-    sql_cdb = """
-            CREATE TABLE IF NOT EXISTS occurrence_records (
-                    record_id INTEGER NOT NULL PRIMARY KEY,
-                    filter_set_name TEXT NOT NULL,
-                    taxon_info_name TEXT NOT NULL,
-                    gbif_id TEXT,
-                    ebird_id TEXT,
-                    source TEXT NOT NULL,
-                    retrieval_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    detection_distance_m INTEGER,
-                    radius_m INTEGER,
-                    GBIF_download_doi TEXT,
-                    general_remarks TEXT,
-                    weight INTEGER DEFAULT 10,
-                    weight_notes TEXT,
-
-                    accessRights TEXT,
-                    bibliographicCitation TEXT,
-                    basisOfRecord TEXT,
-                    collectionCode TEXT,
-                    coordinateUncertaintyInMeters INTEGER,
-                    dataGeneralizations TEXT,
-                    datasetName TEXT,
-                    decimalLatitude TEXT,
-                    decimalLongitude TEXT,
-                    establishmentMeans TEXT,
-                    eventDate TEXT,
-                    eventRemarks TEXT,
-                    footprintWKT TEXT,
-                    footprintSRS TEXT,
-                    georeferencedBy TEXT,
-                    georeferenceProtocol TEXT,
-                    georeferenceVerificationStatus TEXT,
-                    georeferenceRemarks TEXT,
-                    habitat TEXT,
-                    identifiedBy TEXT,
-                    identifiedRemarks TEXT,
-                    identificationQualifier TEXT,
-                    individualCount INTEGER DEFAULT 1,
-                    informationWitheld TEXT,
-                    institutionID TEXT,
-                    issues TEXT,
-                    license TEXT,
-                    locality TEXT,
-                    locationAccordingTo TEXT,
-                    locationRemarks TEXT,
-                    modified TEXT,
-                    occurrenceStatus TEXT,
-                    occurrenceRemarks TEXT,
-                    recordedBy TEXT,
-                    samplingProtocol TEXT,
-                    scientificName TEXT,
-                    taxonConceptID INTEGER NOT NULL,
-                    verbatimLocality TEXT,
-                        FOREIGN KEY (taxonConceptID) REFERENCES taxa(taxonConceptID)
-                        ON UPDATE RESTRICT
-                        ON DELETE NO ACTION);
-    """
-    cursor.executescript(sql_cdb)
     return
 
 def get_GBIF_code(name, rank='species'):
