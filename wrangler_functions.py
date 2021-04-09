@@ -425,6 +425,7 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
                   )
     print(ebd_data_2.dtypes)
     print(ebd_data_2.tail(1).T)
+    ebd_data_2.to_csv(working_directory + "ebd_data.csv")
 
     return ebd_data_2
 
@@ -653,8 +654,6 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
                              "individualCount": np.nan,
                              "taxonConceptID": np.nan})
                     .astype('str'))
-        return records2
-
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< EMAIL QUERY
     if dwca_download == True:
@@ -787,7 +786,9 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
                              "individualCount": np.nan,
                              "taxonConceptID": np.nan})
                     .astype('str'))
-        return records2
+
+    records2.to_csv(working_directory + "gbif_data.csv")
+    return records2
 
 def apply_filters(ebird_data, gbif_data, filter_set, taxon_info, working_directory, query_name):
     '''
@@ -909,6 +910,7 @@ def apply_filters(ebird_data, gbif_data, filter_set, taxon_info, working_directo
                         inplace=True)
     records6.fillna(value={'individualCount': int(1)}, inplace=True)
     records6["radius_meters"] = records6["detection_distance_m"] + records6["coordinateUncertaintyInMeters"]
+    records6.fillna({'radius_meters': 0})
     records6["weight"] = 10
     records6["weight_notes"] = ""
 
