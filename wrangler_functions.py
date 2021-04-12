@@ -971,113 +971,6 @@ def apply_filters(ebird_data, gbif_data, filter_set, taxon_info, working_directo
     conn.close()
     return None
 
-def map_shapefiles(map_these, title):
-    """
-    Displays shapefiles on a simple CONUS basemap.  Maps are plotted in the order
-    provided so put the top map last in the list.  You can specify a column
-    to map as well as custom colors for it.  This function may not be very robust
-    to other applications.
-
-    NOTE: The shapefiles have to be in WGS84 CRS.
-
-    (dict, str) -> displays maps, returns matplotlib.pyplot figure
-
-    Arguments:
-    map_these -- list of dictionaries for shapefiles you want to display in
-                CONUS. Each dictionary should have the following format, but
-                some are unnecessary if 'column' doesn't = 'None'.  The critical
-                ones are file, column, and drawbounds.  Column_colors is needed
-                if column isn't 'None'.  Others are needed if it is 'None'.
-                    {'file': '/path/to/your/shapfile',
-                     'alias': 'my layer'
-                     'column': None,
-                     'column_colors': {0: 'k', 1: 'r'}
-                    'linecolor': 'k',
-                    'fillcolor': 'k',
-                    'linewidth': 1,
-                    'drawbounds': True
-                    'marker': 's'}
-    title -- title for the map.
-    """
-    # Packages needed for plotting
-    import warnings
-    warnings.filterwarnings('ignore')
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.basemap import Basemap
-    import numpy as np
-    from matplotlib.patches import Polygon
-    from matplotlib.collections import PatchCollection
-    from matplotlib.patches import PathPatch
-
-    # Basemap
-    fig = plt.figure(figsize=(15,12))
-    ax = plt.subplot(1,1,1)
-    map = Basemap(projection='aea', resolution='l', lon_0=-95.5, lat_0=39.0,
-                  height=3200000, width=5000000)
-    map.drawcoastlines(color='grey')
-    map.drawstates(color='grey')
-    map.drawcountries(color='grey')
-    map.fillcontinents(color='#a2d0a2',lake_color='#a9cfdc')
-    map.drawmapboundary(fill_color='#a9cfdc')
-
-    for mapfile in map_these:
-        if mapfile['column'] == None:
-            # Add shapefiles to the map
-            if mapfile['fillcolor'] == None:
-                map.readshapefile(mapfile['file'], 'mapfile',
-                                  drawbounds=mapfile['drawbounds'],
-                                  linewidth=mapfile['linewidth'],
-                                  color=mapfile['linecolor'])
-                # Empty scatter plot for the legend
-                plt.scatter([], [], c='', edgecolor=mapfile['linecolor'],
-                            alpha=1, label=mapfile['alias'], s=100,
-                            marker=mapfile['marker'])
-
-            else:
-                map.readshapefile(mapfile['file'], 'mapfile',
-                          drawbounds=mapfile['drawbounds'])
-                # Code for extra formatting -- filling in polygons setting border
-                # color
-                patches = []
-                for info, shape in zip(map.mapfile_info, map.mapfile):
-                    patches.append(Polygon(np.array(shape), True))
-                ax.add_collection(PatchCollection(patches,
-                                                  facecolor= mapfile['fillcolor'],
-                                                  edgecolor=mapfile['linecolor'],
-                                                  linewidths=mapfile['linewidth'],
-                                                  zorder=2))
-                # Empty scatter plot for the legend
-                plt.scatter([], [], c=mapfile['fillcolor'],
-                            edgecolors=mapfile['linecolor'],
-                            alpha=1, label=mapfile['alias'], s=100,
-                            marker=mapfile['marker'])
-
-        else:
-            map.readshapefile(mapfile['file'], 'mapfile', drawbounds=mapfile['drawbounds'])
-            for info, shape in zip(map.mapfile_info, map.mapfile):
-                for thang in mapfile['column_colors'].keys():
-                    if info[mapfile['column']] == thang:
-                        x, y = zip(*shape)
-                        map.plot(x, y, marker=None, color=mapfile['column_colors'][thang])
-
-            # Empty scatter plot for the legend
-            for seal in mapfile['column_colors'].keys():
-                plt.scatter([], [], c=mapfile['column_colors'][seal],
-                            edgecolors=mapfile['column_colors'][seal],
-                            alpha=1, label=mapfile['value_alias'][seal],
-                            s=100, marker=mapfile['marker'])
-
-    # Legend -- the method that works is ridiculous but necessary; you have
-    #           to add empty scatter plots with the symbology you want for
-    #           each shapefile legend entry and then call the legend.  See
-    #           plt.scatter(...) lines above.
-    plt.legend(scatterpoints=1, frameon=True, labelspacing=1, loc='lower left',
-               framealpha=1, fontsize='x-large')
-
-    # Title
-    plt.title(title, fontsize=20, pad=-40, backgroundcolor='w')
-    return
-
 def get_GBIF_code(name, rank='species'):
     """
     Returns the GBIF species code for a scientific name.
@@ -1240,36 +1133,57 @@ def drop_duplicates_latlongdate(df):
     print(str(initial_length - len(df2)) + " duplicate records dropped: {0}".format(duptime))
     return df2
 
-def export_shapefile(database, table, column, outFile):
+def generate_shapefile(database, outFile, footprints=True):
     '''
-    Exports a spatialite geometry column as a shapefile.
+    Exports a shapefile of species occurrence records from a wildlife wrangler
+        output SQLite database.
 
-    Parameters:
-    database -- the sqlite database to use.  Must have spatial data.
-    table -- name of the table with geometry in it.
-    column -- column name of the geometry to export as a shapefile.
-    outFile -- Path (and name) of the file to be created.
+    PARAMETERS
+    database : the sqlite database to use.
+    outFile : Path (and name) of the file to be created.
+    footprints : True creates a map of record footprints (buffered coordinates),
+        whereas False returns records as points base on coordinates provided.
+
+    OUTPUT
+    shapefile saved to disk
     '''
     from datetime import datetime
     import sqlite3
-    import platform
-    import os
-    # Environment variables need to be handled
-    if platform.system() == 'Windows':
-        os.environ['PATH'] = os.environ['PATH'] + ';' + 'C:/Spatialite'
-        os.environ['SPATIALITE_SECURITY'] = 'relaxed'
-    if platform.system() == 'Darwin':
-        os.environ['SPATIALITE_SECURITY'] = 'relaxed'
-    exporttime1 = datetime.now()
-    conn = sqlite3.connect(database, isolation_level='DEFERRED')
-    conn.enable_load_extension(True)
-    conn.execute('SELECT load_extension("mod_spatialite")')
-    cursor = conn.cursor()
-    cursor.execute("""SELECT ExportSHP('{0}', '{1}', '{2}',
-                    'utf-8');""".format(table, column, outFile))
-    conn.commit()
-    conn.close()
-    print("Exported shapefile: " + str(datetime.now() - exporttime1))
+    import pandas as pd
+    import geopandas as gpd
+    timestamp = datetime.now()
+
+    # Get the record coordinates as a data frame
+    records = (pd.read_sql("""SELECT * FROM occurrence_records;""",
+                           con=sqlite3.connect(database))
+                          .astype({'decimalLongitude': 'float',
+                                   'decimalLatitude': 'float',
+                                   'radius_meters': 'float'}))
+
+    # Make a point geometry from coordinates
+    gdf = gpd.GeoDataFrame(records,
+                           geometry=gpd.points_from_xy(records['decimalLongitude'],
+                                                       records['decimalLatitude']))
+
+    # Set the coordinate reference system
+    gdf.crs={'init' :'epsg:4326'}
+
+    # Save points OR
+    if footprints == False:
+        gdf.to_file(outFile)
+
+    # Save polygons (footprints)
+    if footprints == True:
+        # Reproject states and record coordinates to facilitate buffering
+        footprints = gdf.to_crs(epsg=5070)
+
+        # Buffer points with appropriate radii for record footprints
+        footprints['footprint']=footprints.apply(lambda x: x.geometry.buffer(x.radius_meters), axis=1)
+        footprints.set_geometry(col='footprint', inplace=True, drop=True)
+        footprints.to_file(outFile)
+
+    print("Exported shapefile: " + str(datetime.now() - timestamp))
+    return
 
 def ccw_wkt_from_shapefile(shapefile, out_txt):
     """
