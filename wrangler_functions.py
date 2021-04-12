@@ -15,7 +15,7 @@ attribute_data_types = {'GBIF_download_doi': 'str', 'accessRights': 'str',
              'informationWitheld': 'str', 'institutionID': 'str', 'issues': 'str',
              'license': 'str', 'locality': 'str', 'locationAccordingTo': 'str',
              'locationRemarks': 'str', 'modified': 'str', 'occurrenceRemarks': 'str',
-             'occurrenceStatus': 'str', 'radius_m': 'int', 'record_id': 'int',
+             'occurrenceStatus': 'str', 'radius_meters': 'int', 'record_id': 'int',
              'recordedBy': 'str', 'retrieval_date': 'str', 'samplingProtocol': 'str',
              'scientificName': 'str', 'source': 'str', 'taxonConceptID': 'int',
              'taxon_info_name': 'str', 'verbatimLocality': 'str', 'weight': 'int',
@@ -909,6 +909,7 @@ def apply_filters(ebird_data, gbif_data, filter_set, taxon_info, working_directo
         records6.fillna(value={'coordinateUncertaintyInMeters': filter_set["default_coordUncertainty"]},
                         inplace=True)
     records6.fillna(value={'individualCount': int(1)}, inplace=True)
+    records6["detection_distance_m"] = taxon_info["detection_distance_m"]
     records6["radius_meters"] = records6["detection_distance_m"] + records6["coordinateUncertaintyInMeters"]
     records6.fillna({'radius_meters': 0})
     records6["weight"] = 10
