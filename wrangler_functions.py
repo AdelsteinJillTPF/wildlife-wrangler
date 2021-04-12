@@ -21,6 +21,7 @@ attribute_data_types = {'GBIF_download_doi': 'str', 'accessRights': 'str',
              'taxon_info_name': 'str', 'verbatimLocality': 'str', 'weight': 'int',
              'weight_notes': 'str'}
 
+# Core functions >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def build_output_database(output_database):
     """
     Create a database for storing occurrence and taxon concept data.
@@ -423,8 +424,13 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
     ebd_data_2 = (records0
                   .combine_first(ebd_data_1)
                   )
-    print(ebd_data_2.dtypes)
-    print(ebd_data_2.tail(1).T)
+
+    # Populate some fields
+    ebd_data_2["institutionID"] = "clo"
+    ebd_data_2["collecitonCode"] = "EBIRD"
+    ebd_data_2["datasetName"] = "EBD"
+    ebd_data_2["source"] = "eBird"
+    ebd_data_2["basisOfRecord"] = "Human Observation"
     ebd_data_2.to_csv(working_directory + "ebd_data.csv")
 
     return ebd_data_2
@@ -790,7 +796,7 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
     records2.to_csv(working_directory + "gbif_data.csv")
     return records2
 
-def apply_filters(ebird_data, gbif_data, filter_set, taxon_info, working_directory, query_name):
+def filter_records(ebird_data, gbif_data, filter_set, taxon_info, working_directory, query_name):
     '''
     Summarizes the values in the data frames, apply filters, summarize what
         values persisted after filtering.  Insert results into the output db.
@@ -971,26 +977,6 @@ def apply_filters(ebird_data, gbif_data, filter_set, taxon_info, working_directo
     conn.close()
     return None
 
-def get_GBIF_code(name, rank='species'):
-    """
-    Returns the GBIF species code for a scientific name.
-
-    Example: gbifcode = getGBIFcode(name = "Dendroica cerulea")
-    """
-    from pygbif import species
-    key = species.name_backbone(name = name, rank='species')['usageKey']
-    return key
-
-def get_record_details(key):
-    """
-    Returns a dictionary holding all GBIF details about the record.
-
-    Example: details = getRecordDetails(key = 1265907957)
-    """
-    from pygbif import occurrences
-    details = occurrences.get(key = key)
-    return details
-
 def drop_duplicates_latlongdate(df):
     '''
     Function to find and remove duplicate occurrence records within the
@@ -1133,14 +1119,35 @@ def drop_duplicates_latlongdate(df):
     print(str(initial_length - len(df2)) + " duplicate records dropped: {0}".format(duptime))
     return df2
 
-def generate_shapefile(database, outFile, footprints=True):
+# Helper functions >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def get_GBIF_code(name, rank='species'):
+    """
+    Returns the GBIF species code for a scientific name.
+
+    Example: gbifcode = getGBIFcode(name = "Dendroica cerulea")
+    """
+    from pygbif import species
+    key = species.name_backbone(name = name, rank='species')['usageKey']
+    return key
+
+def get_record_details(key):
+    """
+    Returns a dictionary holding all GBIF details about the record.
+
+    Example: details = getRecordDetails(key = 1265907957)
+    """
+    from pygbif import occurrences
+    details = occurrences.get(key = key)
+    return details
+
+def generate_shapefile(database, output_file, footprints=True):
     '''
     Exports a shapefile of species occurrence records from a wildlife wrangler
         output SQLite database.
 
     PARAMETERS
     database : the sqlite database to use.
-    outFile : Path (and name) of the file to be created.
+    output_file : Path (and name) of the file to be created.
     footprints : True creates a map of record footprints (buffered coordinates),
         whereas False returns records as points base on coordinates provided.
 
@@ -1238,30 +1245,7 @@ def ccw_wkt_from_shapefile(shapefile, out_txt):
         print("You need to reproject the shapefile to EPSG:4326")
     return
 
-def get_taxon_concept(paramdb, taxon_id):
-    '''
-    Retrieves taxon concept information from the parameters database.
-
-    Parameters
-    ----------
-    paramdb : String; path to the parameters sqlite database.
-    taxon_id : String; wrangler code for the taxon.
-
-    Returns
-    -------
-    concept : A tuple of gbif_code, common_name, scientific_name,
-        detection_distance, and sp_geom).
-    '''
-    import sqlite3
-    conn2 = sqlite3.connect(paramdb, isolation_level='DEFERRED')
-    cursor2 = conn2.cursor()
-    sql_tax = """SELECT gbif_id, common_name, scientific_name,
-                        detection_distance_meters, geometry
-                 FROM taxa_concepts
-                 WHERE taxon_id = '{0}';""".format(taxon_id)
-    concept = cursor2.execute(sql_tax).fetchall()[0]
-    return concept
-
+# Temp - Reference
 def retrieve_gbif_occurrences(codeDir, taxon_id, paramdb, spdb,
                               gbif_req_id, gbif_filter_id, default_coordUncertainty,
                               outDir, summary_name, username, password, email,
