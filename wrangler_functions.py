@@ -1,5 +1,5 @@
 # occurrece records table datatypes
-attribute_data_types = {'GBIF_download_doi': 'str', 'accessRights': 'str',
+output_schema = {'GBIF_download_doi': 'str', 'accessRights': 'str',
              'basisOfRecord': 'str', 'bibliographicCitation': 'str',
              'collectionCode': 'str', 'coordinateUncertaintyInMeters': 'float',
              'dataGeneralizations': 'str', 'datasetName': 'str',
@@ -22,7 +22,7 @@ attribute_data_types = {'GBIF_download_doi': 'str', 'accessRights': 'str',
              'weight_notes': 'str'}
 
 # Core functions >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def build_output_database(output_database):
+def build_output_database(output_database):                                       # REPLACE WITH PANDAS AND ATTRIBUTE DICTIONARY METHOD
     """
     Create a database for storing occurrence and taxon concept data.
     The column names that are "camel case" are Darwin Core attributes, whereas
@@ -417,7 +417,7 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
              'species_comments': 'identifiedRemarks',
              'trip_comments': 'eventRemarks'}, axis=1)
     # Drop columns
-    records1 = gdf.filter(list(attribute_data_types.keys()), axis=1)
+    records1 = gdf.filter(list(output_schema.keys()), axis=1)
     # Populate columns
     records1["institutionID"] = "clo"
     records1["collectionCode"] = "EBIRD"
@@ -427,7 +427,7 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
     records1["GBIF_download_doi"] = "bypassed"
 
     # Add EBD records to a template dataframe
-    schema_df = pd.DataFrame(columns=list(attribute_data_types.keys()))
+    schema_df = pd.DataFrame(columns=list(output_schema.keys()))
     records2 = schema_df.combine_first(records1)
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  Results
@@ -552,15 +552,15 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
             all_jsons = all_jsons + occs
 
         # Load records into a data frame
-        dfRaw = pd.DataFrame(columns=attribute_data_types.keys())
+        dfRaw = pd.DataFrame(columns=output_schema.keys())
         insertDict = {}
-        for x in attribute_data_types.keys():
+        for x in output_schema.keys():
             insertDict[x] = []
         for x in all_jsons:
-            present_keys = list(set(x.keys()) & set(attribute_data_types.keys()))
+            present_keys = list(set(x.keys()) & set(output_schema.keys()))
             for y in present_keys:
                 insertDict[y] = insertDict[y] + [str(x[y])]
-            missing_keys = list(set(attribute_data_types.keys()) - set(x.keys()))
+            missing_keys = list(set(output_schema.keys()) - set(x.keys()))
             for z in missing_keys:
                 insertDict[z] = insertDict[z] + ["UNKNOWN"]
         insertDF = pd.DataFrame(insertDict)
@@ -582,7 +582,7 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
         #    Count entries per attribute(column), reformat as new df with appropriate
         #   columns.  Finally, insert into database.
         #    NOTE: When pulling from df0copy, only a specified subset of keys are
-        #    assessed (attribute_data_types.keys()).  For a more complete picture, all_jsons must be
+        #    assessed (output_schema.keys()).  For a more complete picture, all_jsons must be
         #   assessed.  That has historically been very slow.
         """ # Fastest, but least informative method for gbif_fields_returned
         newt = datetime.now()
@@ -644,7 +644,7 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
                              "radius_meters": np.nan,
                              "coordinateUncertaintyInMeters": np.nan,
                              "individualCount": np.nan})
-                    .astype(attribute_data_types))
+                    .astype(output_schema))
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< EMAIL QUERY
     if dwca_download == True:
@@ -744,7 +744,7 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
     # Rename columns
     records1 = dfRaw.rename({"issue": "issues", 'id': 'record_id'}, axis=1)
     # Drop columns
-    records1 = records1.filter(items=attribute_data_types.keys(), axis=1)
+    records1 = records1.filter(items=output_schema.keys(), axis=1)
     # Populate columns
     records1["retrieval_date"] = str(datetime.now())
     if filter_set['get_dwca'] == True:
@@ -763,7 +763,7 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
     #records1['individualCount'].replace(to_replace="UNKNOWN", value=1, inplace=True)
 
     # Add GBIF records to template
-    records2 = (pd.DataFrame(columns=attribute_data_types.keys())
+    records2 = (pd.DataFrame(columns=output_schema.keys())
                 .combine_first(records1))
 
     # Results
@@ -798,7 +798,7 @@ def filter_records(ebird_data, gbif_data, filter_set, taxon_info, working_direct
     cursor = conn.cursor()
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  MANAGE DATA TYPES
-    schema = attribute_data_types
+    schema = output_schema
     string_atts = {key:value for (key, value) in schema.items() if schema[key] == 'str'}
     ebird_data = ebird_data.astype(string_atts)
     gbif_data = gbif_data.astype(string_atts)
