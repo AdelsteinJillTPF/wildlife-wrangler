@@ -947,7 +947,6 @@ def filter_records(ebird_data, gbif_data, filter_set, taxon_info, working_direct
     source_summaries = pd.merge(source_summary1, source_summary2,
                                 on=['institutionID', 'collectionCode', 'datasetName'],
                                 how='inner')
-    print(source_summaries)
 
     # Calculate a difference column
     source_summaries['removed'] = source_summaries['acquired'] - source_summaries['retained']
