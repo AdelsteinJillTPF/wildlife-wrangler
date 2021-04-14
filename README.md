@@ -52,29 +52,29 @@ This framework is designed to have certain features that provide summaries that 
   * _Taxonomic issues_ -- Failure to account for taxonomic issues, such as species name changes, synonyms, homonyms, and taxon concept changes, can create problems for studies of species' geographic distributions that use species occurrence records.  The potential consequences of these errors include commission errors, inflated omission rates, and missed opportunities for model validation.  The wildlife-wrangler.sqlite database can facilitate efforts to avoid those errors.  This topic is discussed in detail within the user's guide.
 
 
-## Recent changes (January 20, 2021)
-* Making species level geometry filtering optional if polygon is present in taxa concepts table.
-* Include citations, rights, download key, and download doi for GBIF downloads.
+## Recent changes (April 20, 2021)
+* Made species level geometry filtering optional if polygon is present in taxa concepts table.
+* Included citations, rights, download key, and download doi for GBIF downloads.
+* Ability to incorporate bird records directly from a copy of the eBird Basic Dataset ([EBD](https://ebird.org/about/download-ebird-data-products)) that the user has downloaded.  The eBird Observational Dataset ([EOD](https://ebird.org/about/download-ebird-data-products)) is available through GBIF, but that dataset does not include some valuable information that is available in the EBD.
+* Abandonment of Spatialite in favor of the Python Geopandas package for spatial processes.  All software requirements can now be satisfied with conda. There is no need to suffer through Spatialite installation.  
 
 ## Coming soon
-* Ability to incorporate bird records directly from a copy of the eBird Basic Dataset ([EBD](https://ebird.org/about/download-ebird-data-products)) that the user has downloaded.  The eBird Observational Dataset ([EOD](https://ebird.org/about/download-ebird-data-products)) is available through GBIF, but that dataset does not include some valuable information that is available in the EBD.
-* Incorporating GBIF fields "dataGeneralizations", "georeferenceRemarks", and "informationWitheld".
+* Incorporating GBIF fields "dataGeneralizations" and "informationWitheld".
 * Overriding polygon geometry columns in output database if a "footprintWKT" value was provided.
 * Incorporating tools for navigating taxa concept matching and assessment.
 
 ## Inputs
-Data is gathered from databases via GBIF, so there are few inputs.  However, the 'wildlife-wrangler.sqlite' database is needed, which includes tables for taxa definitions, data request parameters, and post-request filtering criteria.
+Data is gathered from databases via GBIF, and records can be queried from a copy of the EBird Basic Dataset that the user has acquired from eBird.
 
 ## Outputs
 On a per-species, per-query basis
-* A database of filtered species occurrence records with documentation.  The format supports display in various Geographic Information Systems (GIS).
-* Notebook documents that describe decisions made and the data acquired.
+* A database of filtered species occurrence records with documentation.
+* Notebook documents that describe decisions made by the user and summarize the data acquired.
 
 ## Constraints
 * Currently only works with Windows operating systems.  
 * Queries returning > 5,000,000 records may fail.
-* Setup of spatialite can be difficult.
-* Processing speed is limited in some cases by lack of spatial indexing, because setup of spatialite with spatial indexing enabled is very difficult.
+* Processing speed is limited in some cases by lack of spatial indexing.
 
 ## Dependencies
 Python 3 and numerous packages including sqlite3 with the spatialite extension are needed.  Running the following code in a conda shell should create a suitable environment named "wrangler":
