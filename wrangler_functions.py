@@ -495,12 +495,8 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
     query_polygon = filter_set["query_polygon"]
     use_taxon_geometry = filter_set["use_taxon_geometry"]
     dwca_download = filter_set["get_dwca"]
+    '''
 
-    # Sort out geometries
-    # A geometry could also be stated for the species, assess what to do
-    # It could also be that user opted not to use species geometry.
-    if use_taxon_geometry == False:
-        taxon_polygon = None
     if query_polygon is None and taxon_polygon is None:
         poly = None
     elif query_polygon is not None and taxon_polygon is None:
@@ -513,7 +509,39 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
         sp_polygon = shapely.wkt.loads(taxon_polygon)
         poly_intersection = filter_polygon.intersection(sp_polygon)
         poly = shapely.wkt.dumps(poly_intersection)
+        print(poly)
+        print(type(poly))
+    '''
+    EOO = taxon_info["TAXON_EOO"]
+    AOI = filter_set["query_polygon"]
 
+    # It could be that user opted not to use species geometry.
+    if filter_set['use_taxon_geometry'] == False:
+        EOO = None
+
+    # A geometry could be stated for the species, assess what to do
+    if AOI is None and EOO is None:
+        filter_polygon = None
+    elif AOI is not None and EOO is None:
+        filter_polygon = AOI
+    elif AOI is None and EOO is not None:
+        filter_polygon = EOO
+    elif AOI is not None and EOO is not None:
+        # Get/use the intersection of the two polygons in this case
+        AOI_polygon = shapely.wkt.loads(AOI)
+        EOO_polygon = shapely.wkt.loads(EOO)
+        intersection = AOI_polygon.intersection(EOO_polygon)
+        # Make the polygon's outer ring counter clockwise
+        if intersection.exterior.is_ccw == False:
+            print("Reordered filter polygon coordinates")
+            intersection = shapely.geometry.polygon.orient(intersection, sign=1.0)
+            # Get the well-known text version of the polygon
+            filter_polygon = shapely.wkt.dumps(intersection)
+        else:
+            filter_polygon = shapely.wkt.dumps(intersection)
+            #filter_polygon = shapely.wkt.dumps(intersection)
+
+    #print(shapely.wkt.loads(filter_polygon).exterior.is_ccw)
     print("Got request params and sorted out geometry constraints: " + str(datetime.now() - timestamp))
     timestamp = datetime.now()
 
@@ -527,7 +555,7 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
                                     hasGeospatialIssue=geoIssue,
                                     hasCoordinate=coordinate,
                                     country=country,
-                                    geometry=poly)
+                                    geometry=filter_polygon)
     record_count=occ_search["count"]
     print(str(record_count) + " records available")
 
@@ -547,7 +575,7 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
                                           hasGeospatialIssue=geoIssue,
                                           hasCoordinate=coordinate,
                                           country=country,
-                                          geometry=poly)
+                                          geometry=filter_polygon)
             occs = batch['results']
             all_jsons = all_jsons + occs
 
@@ -663,9 +691,9 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
         if months != None:
             download_filters.append('month >= {0}'.format(months.split(",")[0]))
             download_filters.append('month <= {0}'.format(months.split(",")[1]))
-        poly = None # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Remove and debug
-        if poly != None:
-            download_filters.append('geometry within {0}'.format(poly))
+
+        if filter_polygon != None:
+            download_filters.append('geometry within {0}'.format(filter_polygon))
         if geoIssue != None:
             download_filters.append('hasGeospatialIssue = {0}'.format(geoIssue))
         if latRange != None:
@@ -675,6 +703,7 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
             download_filters.append('decimalLongitude >= {0}'.format(lonRange.split(",")[0]))
             download_filters.append('decimalLongitude <= {0}'.format(lonRange.split(",")[1]))
         timestamp = datetime.now()
+        print(download_filters)
         d = occurrences.download(download_filters,
                                  pred_type='and',
                                  user = username,
@@ -800,8 +829,11 @@ def filter_records(ebird_data, gbif_data, filter_set, taxon_info, working_direct
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  MANAGE DATA TYPES
     schema = output_schema
     string_atts = {key:value for (key, value) in schema.items() if schema[key] == 'str'}
-    ebird_data = ebird_data.astype(string_atts)
-    gbif_data = gbif_data.astype(string_atts)
+
+    if ebird_data is not None:
+        ebird_data = ebird_data.astype(string_atts)
+    if gbif_data is not None:
+        gbif_data = gbif_data.astype(string_atts)
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< REMOVE EBIRD FROM GBIF
     if ebird_data is not None:
@@ -907,6 +939,8 @@ def filter_records(ebird_data, gbif_data, filter_set, taxon_info, working_direct
     records7["weight"] = 10
     records7["weight_notes"] = ""
     records7["taxon_id"] = taxon_info["ID"]
+    records7["gbif_id"] = taxon_info["GBIF_ID"]
+    records7["ebird_id"] = taxon_info["EBIRD_ID"]
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  REMOVE SPACE-TIME DUPLICATES
     # Prep some columns by changing data type
@@ -1101,7 +1135,7 @@ def drop_duplicates_latlongdate(df):
     df2 = df[df['record_id'].isin(duplis) == False].copy()
 
     # Drop excess columns
-    df2.drop(['dup_OGprec'], inplace=True, axis=1)
+    df2.drop(columns=['dup_OGprec'], axis=1, inplace=True)
 
     duptime = datetime.now() - startduptime
     print(str(initial_length - len(df2)) + " duplicate records dropped: {0}".format(duptime))
