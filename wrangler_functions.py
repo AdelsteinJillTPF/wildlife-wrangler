@@ -1,34 +1,65 @@
 # occurrece records table datatypes
-output_schema = {'GBIF_download_doi': 'str', 'accessRights': 'str',
-             'basisOfRecord': 'str', 'bibliographicCitation': 'str',
-             'collectionCode': 'str', 'coordinateUncertaintyInMeters': 'float',
-             'dataGeneralizations': 'str', 'datasetName': 'str',
-             'decimalLatitude': 'str', 'decimalLongitude': 'str',
-             'detection_distance_m': 'int', 'ebird_id': 'str',
-             'establishmentMeans': 'str', 'eventDate': 'str', 'eventRemarks': 'str',
-             'filter_set_name': 'str', 'footprintSRS': 'str', 'footprintWKT': 'str',
-             'gbif_id': 'str', 'general_remarks': 'str', 'georeferenceProtocol': 'str',
-             'georeferenceRemarks': 'str', 'georeferenceVerificationStatus': 'str',
-             'georeferencedBy': 'str', 'habitat': 'str',
-             'identificationQualifier': 'str', 'identifiedBy': 'str',
-             'identifiedRemarks': 'str', 'individualCount': 'int',
-             'informationWitheld': 'str', 'institutionID': 'str', 'issues': 'str',
-             'license': 'str', 'locality': 'str', 'locationAccordingTo': 'str',
-             'locationRemarks': 'str', 'modified': 'str', 'occurrenceRemarks': 'str',
-             'occurrenceStatus': 'str', 'radius_meters': 'float', 'record_id': 'str',
-             'recordedBy': 'str', 'retrieval_date': 'str', 'samplingProtocol': 'str',
-             'scientificName': 'str', 'source': 'str', 'taxonConceptID': 'str',
-             'taxon_info_name': 'str', 'verbatimLocality': 'str', 'weight': 'int',
-             'weight_notes': 'str'}
+output_schema = {"GBIF_download_doi": "str",
+                 "accessRights": "str",
+                 "basisOfRecord": "str",
+                 "bibliographicCitation": "str",
+                 "collectionCode": "str",
+                 "coordinateUncertaintyInMeters": "float",
+                 "dataGeneralizations": "str",
+                 "datasetName": "str",
+                 "decimalLatitude": "str",
+                 "decimalLongitude": "str",
+                 "detection_distance_m": "int",
+                 "ebird_id": "str",
+                 "establishmentMeans": "str",
+                 "eventDate": "str",
+                 "eventRemarks": "str",
+                 "filter_set_name": "str",
+                 "footprintSRS": "str",
+                 "footprintWKT": "str",
+                 "gbif_id": "str",
+                 "general_remarks": "str",
+                 "geodeticDatum": "str",
+                 "georeferenceProtocol": "str",
+                 "georeferenceRemarks": "str",
+                 "georeferenceVerificationStatus": "str",
+                 "georeferencedBy": "str",
+                 "habitat": "str",
+                 "identificationQualifier": "str",
+                 "identifiedBy": "str",
+                 "identifiedRemarks": "str",
+                 "individualCount": "int",
+                 "informationWitheld": "str",
+                 "institutionID": "str",
+                 "issues": "str",
+                 "license": "str",
+                 "locality": "str",
+                 "locationAccordingTo": "str",
+                 "locationRemarks": "str",
+                 "modified": "str",
+                 "occurrenceRemarks": "str",
+                 "occurrenceStatus": "str",
+                 "radius_meters": "float",
+                 "record_id": "str",
+                 "recordedBy": "str",
+                 "retrieval_date": "str",
+                 "samplingProtocol": "str",
+                 "scientificName": "str",
+                 "source": "str",
+                 "taxonConceptID": "str",
+                 "taxon_info_name": "str",
+                 "verbatimLocality": "str",
+                 "weight": "int",
+                 "weight_notes": "str"}
 
 # Core functions >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def build_output_database(output_database):                                       # REPLACE WITH PANDAS AND ATTRIBUTE DICTIONARY METHOD
+def build_output_database(output_database):
     """
     Create a database for storing occurrence and taxon concept data.
     The column names that are "camel case" are Darwin Core attributes, whereas
-    lower case names containing "_" between words are not.  Not all Darwin
-    Core attributes are included.  Only those that could be useful for filtering
-    and assigning weights are included.
+    lower case names containing "_" between words are not.  Only those Darwin
+    core attributes that could be useful for filtering and assigning weights
+    are included.
 
     Parameters
     ----------
@@ -40,75 +71,21 @@ def build_output_database(output_database):                                     
     """
     import os
     import sqlite3
+    import pandas as pd
 
     # Delete the database if it already exists
     if os.path.exists(output_database):
         os.remove(output_database)
 
     # Create or connect to the database
-    conn = sqlite3.connect(output_database, isolation_level='DEFERRED')
-    cursor = conn.cursor()
+    conn = sqlite3.connect(output_database)
 
     # Create a table for occurrence records.
-    sql_cdb = """
-            CREATE TABLE IF NOT EXISTS occurrence_records (
-                    record_id INTEGER NOT NULL PRIMARY KEY,
-                    filter_set_name TEXT NOT NULL,
-                    taxon_info_name TEXT NOT NULL,
-                    gbif_id TEXT,
-                    ebird_id TEXT,
-                    source TEXT NOT NULL,
-                    retrieval_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    detection_distance_m INTEGER,
-                    radius_meters INTEGER,
-                    GBIF_download_doi TEXT,
-                    general_remarks TEXT,
-                    weight INTEGER DEFAULT 10,
-                    weight_notes TEXT,
+    df = (pd.DataFrame(columns=output_schema.keys())
+            .astype(output_schema)
+            .to_sql(name='occurrence_records', con=conn, if_exists='replace'))
 
-                    accessRights TEXT,
-                    bibliographicCitation TEXT,
-                    basisOfRecord TEXT,
-                    collectionCode TEXT,
-                    coordinateUncertaintyInMeters INTEGER,
-                    dataGeneralizations TEXT,
-                    datasetName TEXT,
-                    decimalLatitude TEXT,
-                    decimalLongitude TEXT,
-                    establishmentMeans TEXT,
-                    eventDate TEXT,
-                    eventRemarks TEXT,
-                    footprintWKT TEXT,
-                    footprintSRS TEXT,
-                    georeferencedBy TEXT,
-                    georeferenceProtocol TEXT,
-                    georeferenceVerificationStatus TEXT,
-                    georeferenceRemarks TEXT,
-                    habitat TEXT,
-                    identifiedBy TEXT,
-                    identifiedRemarks TEXT,
-                    identificationQualifier TEXT,
-                    individualCount INTEGER DEFAULT 1,
-                    informationWitheld TEXT,
-                    institutionID TEXT,
-                    issues TEXT,
-                    license TEXT,
-                    locality TEXT,
-                    locationAccordingTo TEXT,
-                    locationRemarks TEXT,
-                    modified TEXT,
-                    occurrenceStatus TEXT,
-                    occurrenceRemarks TEXT,
-                    recordedBy TEXT,
-                    samplingProtocol TEXT,
-                    scientificName TEXT,
-                    taxonConceptID INTEGER NOT NULL,
-                    verbatimLocality TEXT,
-                        FOREIGN KEY (taxonConceptID) REFERENCES taxa(taxonConceptID)
-                        ON UPDATE RESTRICT
-                        ON DELETE NO ACTION);
-    """
-    cursor.executescript(sql_cdb)
+    conn.close()
     return
 
 def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_name):
@@ -139,6 +116,7 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
     import sqlite3
     import geopandas as gpd
     import shapely
+    from shapely.wkt import dumps, loads
     import numpy as np
 
     # import R's utility package, select a mirror for R packages
@@ -360,7 +338,7 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
                            geometry=gpd.points_from_xy(records0['longitude'],
                                                        records0['latitude']))
 
-    #   It could be that user opted not to use species geometry.
+    # It could be that user opted not to use species geometry.
     if filter_set['use_taxon_geometry'] == False:
         EOO = None
 
@@ -399,7 +377,7 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  PREP FOR OUTPUT
     timestamp = datetime.now()
-    ''' DELETE THIS  ??????????????????????????????????????????????????????????
+    ''' DELETE THIS  ?????????????????????????????????                        ?????????????????????????
     conn = sqlite3.connect(output_database, isolation_level='DEFERRED')
     cursor = conn.cursor()
     schema = conn.execute("PRAGMA table_info (occurrence_records);").fetchall()
@@ -432,7 +410,7 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  Results
     records2.to_csv(working_directory + "ebd_data.csv")
-    print("Prepared the eBird records for the database: " + str(datetime.now() - timestamp))
+    print("Prepared the eBird records for processing: " + str(datetime.now() - timestamp))
     return records2
 
 def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, username, password, email):
@@ -495,23 +473,6 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
     query_polygon = filter_set["query_polygon"]
     use_taxon_geometry = filter_set["use_taxon_geometry"]
     dwca_download = filter_set["get_dwca"]
-    '''
-
-    if query_polygon is None and taxon_polygon is None:
-        poly = None
-    elif query_polygon is not None and taxon_polygon is None:
-        poly = query_polygon
-    elif query_polygon is None and taxon_polygon is not None:
-        poly = taxon_polygon
-    elif query_polygon is not None and taxon_polygon is not None:
-        # Get/use the intersection of the two polygons
-        filter_polygon = shapely.wkt.loads(query_polygon)
-        sp_polygon = shapely.wkt.loads(taxon_polygon)
-        poly_intersection = filter_polygon.intersection(sp_polygon)
-        poly = shapely.wkt.dumps(poly_intersection)
-        print(poly)
-        print(type(poly))
-    '''
     EOO = taxon_info["TAXON_EOO"]
     AOI = filter_set["query_polygon"]
 
@@ -539,13 +500,12 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
             filter_polygon = shapely.wkt.dumps(intersection)
         else:
             filter_polygon = shapely.wkt.dumps(intersection)
-            #filter_polygon = shapely.wkt.dumps(intersection)
 
     #print(shapely.wkt.loads(filter_polygon).exterior.is_ccw)
     print("Got request params and sorted out geometry constraints: " + str(datetime.now() - timestamp))
-    timestamp = datetime.now()
 
-    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< GET RECORD COUNT
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< GET RECORD COUNT
+    timestamp = datetime.now()
     # First, find out how many records there are that meet criteria
     occ_search = occurrences.search(gbif_id,
                                     year=years,
@@ -553,164 +513,87 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
                                     decimalLatitude=latRange,
                                     decimalLongitude=lonRange,
                                     hasGeospatialIssue=geoIssue,
-                                    hasCoordinate=coordinate,
+                                    hasCoordinate=True,
                                     country=country,
                                     geometry=filter_polygon)
     record_count=occ_search["count"]
     print(str(record_count) + " records available")
 
-    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< API QUERY
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< API QUERY
     if dwca_download == False:
         # Get records in batches, saving into master list.
         all_jsons = []
         batches = range(0, record_count, 300)
         for i in batches:
             batch = occurrences.search(gbif_id,
-                                          limit=300,
-                                          offset=i,
-                                          year=years,
-                                          month=months,
-                                          decimalLatitude=latRange,
-                                          decimalLongitude=lonRange,
-                                          hasGeospatialIssue=geoIssue,
-                                          hasCoordinate=coordinate,
-                                          country=country,
-                                          geometry=filter_polygon)
+                                       limit=300,
+                                       offset=i,
+                                       year=years,
+                                       month=months,
+                                       decimalLatitude=latRange,
+                                       decimalLongitude=lonRange,
+                                       hasGeospatialIssue=geoIssue,
+                                       hasCoordinate=True,
+                                       country=country,
+                                       geometry=filter_polygon)
             occs = batch['results']
             all_jsons = all_jsons + occs
 
-        # Load records into a data frame
-        dfRaw = pd.DataFrame(columns=output_schema.keys())
+        # Get a list of keys that were returned
+        api_keys = set([])
+        for j in all_jsons:
+            api_keys = api_keys | set(j.keys())
+
+        # Load json records into a dataframe, via a dictionary
         insertDict = {}
-        for x in output_schema.keys():
-            insertDict[x] = []
-        for x in all_jsons:
-            present_keys = list(set(x.keys()) & set(output_schema.keys()))
-            for y in present_keys:
-                insertDict[y] = insertDict[y] + [str(x[y])]
-            missing_keys = list(set(output_schema.keys()) - set(x.keys()))
-            for z in missing_keys:
-                insertDict[z] = insertDict[z] + ["UNKNOWN"]
-        insertDF = pd.DataFrame(insertDict)
-        df0 = dfRaw.append(insertDF, ignore_index=True, sort=False)
-        df0copy = df0.copy() # a copy for gbif_fields_returned below
-
-        df0.drop(["issue", "id"], inplace=True, axis=1)
-        df0['coordinateUncertaintyInMeters'].replace(to_replace="UNKNOWN",
-                                                     value=np.NaN, inplace=True)
-        df0 = df0.astype({'coordinateUncertaintyInMeters': 'float',
-                          'decimalLatitude': 'string', 'decimalLongitude': 'string'})
-        df0['individualCount'].replace(to_replace="UNKNOWN", value=1,
-                                       inplace=True)
-
+        for k in list(api_keys):
+            insertDict[k] = []
+        for j in all_jsons:
+            present_keys = list(set(j.keys()) & api_keys)
+            for prk in present_keys:
+                insertDict[prk] = insertDict[prk] + [str(j[prk])]
+            missing_keys = list(api_keys - set(j.keys()))
+            for mik in missing_keys:
+                insertDict[mik] = insertDict[mik] + ["UNKNOWN"]
+        dfRaw = pd.DataFrame(insertDict)
         print("Downloaded records: " + str(datetime.now() - timestamp))
-        timestamp = datetime.now()
-
-        # Summarize the attributes that were returned
-        #    Count entries per attribute(column), reformat as new df with appropriate
-        #   columns.  Finally, insert into database.
-        #    NOTE: When pulling from df0copy, only a specified subset of keys are
-        #    assessed (output_schema.keys()).  For a more complete picture, all_jsons must be
-        #   assessed.  That has historically been very slow.
-        """ # Fastest, but least informative method for gbif_fields_returned
-        newt = datetime.now()
-        df0copy.where(df0copy != 'UNKNOWN', inplace=True)
-        df_populated1 = pd.DataFrame(df0copy.count(axis=0).T.iloc[1:])
-        #df_populated1['included(n)'] = df_populated1[0] # Can this be determined from all_jsons?  Quickly?
-        df_populated1['populated(n)'] = df_populated1[0]
-        df_populated2 = df_populated1.filter(items=['included(n)', 'populated(n)'], axis='columns')
-        df_populated2.index.name = 'attribute'
-        df_populated2.to_sql(name='gbif_fields_returned', con=conn, if_exists='replace')
-        print("Summarized fields returned: " + str(datetime.now() - newt))
-        """
-        # Slower, but more informative method for gbif_fields_returned
-        '''
-        The method below provides more information on values returned than the
-        one above, but is slow.  Can it be improved to be faster?
-        '''
-        keys = [list(x.keys()) for x in all_jsons]
-        keys2 = set([])
-        for x in keys:
-            keys2 = keys2 | set(x)
-        dfK = pd.DataFrame(index=keys2, columns=['included(n)', 'populated(n)'])
-        dfK['included(n)'] = 0
-        dfK['populated(n)'] = 0
-        timestamp = datetime.now()
-        ####       START SLOW
-        for t in all_jsons:
-            for y in t.keys():
-                dfK.loc[y, 'included(n)'] += 1
-                try:
-                    int(t[y])
-                    dfK.loc[y, 'populated(n)'] += 1
-                except:
-                    if t[y] == None:
-                        pass
-                    elif len(t[y]) > 0:
-                        dfK.loc[y, 'populated(n)'] += 1
-        print("Summarized fields returned: " + str(datetime.now() - timestamp))
-        #######       #####  END SLOW
-        dfK.sort_index(inplace=True)
-        dfK.index.name = 'attribute'
-
-        # Save attribute summary into the output database
-        dfK.to_sql(name='gbif_fields_returned', con=conn, if_exists='replace')
-
-        # Prep the records for processing (filtering, storing in output db)
-        schema = conn.execute("PRAGMA table_info (occurrence_records);").fetchall()
-        column_names = [x[1] for x in schema]
-        records0 = pd.DataFrame(columns=column_names)
-
-        # Prep GBIF records
-        records1 = (df0.rename({'id': 'record_id'}, axis=1)
-                  .filter(records0.columns,axis=1))
-
-        # Add GBIF records to template
-        records2 = (records0
-                    .combine_first(records1)
-                    .fillna({"detection_distance_m": np.nan,
-                             "radius_meters": np.nan,
-                             "coordinateUncertaintyInMeters": np.nan,
-                             "individualCount": np.nan})
-                    .astype(output_schema))
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< EMAIL QUERY
     if dwca_download == True:
-        # Make the data request using the download function.  Results are
-        #   emailed.
+        '''
+        Request data using the download function.  Results are emailed.
+        '''
         # First, build a query list.  NoneType values cause problems, so only
         #   add arguments if their value isn't NoneType.
         download_filters = ['taxonKey = {0}'.format(gbif_id)]
-        if coordinate != None:
-            download_filters.append('hasCoordinate = {0}'.format(coordinate))
-        if country != None:
+        download_filters.append('hasCoordinate = True')
+        if country is not None:
             download_filters.append('country = {0}'.format(country))
-        if years != None:
+        if years is not None:
             download_filters.append('year >= {0}'.format(years.split(",")[0]))
             download_filters.append('year <= {0}'.format(years.split(",")[1]))
-        if months != None:
+        if months is not None:
             download_filters.append('month >= {0}'.format(months.split(",")[0]))
             download_filters.append('month <= {0}'.format(months.split(",")[1]))
-
-        if filter_polygon != None:
-            download_filters.append('geometry within {0}'.format(filter_polygon))
-        if geoIssue != None:
+        if filter_polygon is not None:
+            download_filters.append("geometry = '{0}'".format(filter_polygon))
+        if geoIssue is not None:
             download_filters.append('hasGeospatialIssue = {0}'.format(geoIssue))
-        if latRange != None:
+        if latRange is not None:
             download_filters.append('decimalLatitude >= {0}'.format(latRange.split(",")[0]))
             download_filters.append('decimalLatitude <= {0}'.format(latRange.split(",")[1]))
-        if lonRange !=None:
+        if lonRange  is not None:
             download_filters.append('decimalLongitude >= {0}'.format(lonRange.split(",")[0]))
             download_filters.append('decimalLongitude <= {0}'.format(lonRange.split(",")[1]))
         timestamp = datetime.now()
         print(download_filters)
+
+        # Get the value of the download key
         d = occurrences.download(download_filters,
                                  pred_type='and',
                                  user = username,
                                  pwd = password,
                                  email = email)
-
-        # Get the value of the download key
         dkey = d[0]
 
         # Now download the actual zip file containing the Darwin Core files
@@ -758,15 +641,16 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
                                                                   dkey))
         print("Stored GBIF Download DOI etc.: " + str(datetime.now() - timestamp))
 
-        # Summarize the fields returned
-        timestamp = datetime.now()
-        df_populated1 = pd.DataFrame(dfRaw.count(axis=0).T.iloc[1:])
-        df_populated1['included(n)'] = len(dfRaw)
-        df_populated1['populated(n)'] = df_populated1[0]
-        df_populated2 = df_populated1.filter(items=['included(n)', 'populated(n)'], axis='columns')
-        df_populated2.index.name = 'attribute'
-        df_populated2.to_sql(name='gbif_fields_returned', con=conn, if_exists='replace')
-        print("Summarized fields returned: " + str(datetime.now() - timestamp))
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  SUMMARIZE
+    timestamp = datetime.now()
+    df_populated1 = pd.DataFrame(dfRaw.count(axis=0).T.iloc[1:])
+    df_populated1['included(n)'] = len(dfRaw)
+    df_populated1['populated(n)'] = df_populated1[0]
+    df_populated2 = df_populated1.filter(items=['included(n)', 'populated(n)'],
+                                         axis='columns')
+    df_populated2.index.name = 'attribute'
+    df_populated2.to_sql(name='gbif_fields_returned', con=conn, if_exists='replace')
+    print("Summarized fields returned: " + str(datetime.now() - timestamp))
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  PREPARE
     timestep = datetime.now()
@@ -781,28 +665,32 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
     else:
         records1["GBIF_download_doi"] = "bypassed"
     records1["source"] = "GBIF"
-    print("Revised field names and values: " + str(datetime.now() - timestamp))
 
-
-    #records1['coordinateUncertaintyInMeters'].replace(to_replace="UNKNOWN",
-    #                                             value=np.NaN, inplace=True)
-    #records1['decimalLatitude'] = records1['decimalLatitude'].astype(str)
-    #records1['decimalLongitude'] = records1['decimalLongitude'].astype(str)
-    #print(records1.individualCount.unique())
-    #records1['individualCount'].replace(to_replace="UNKNOWN", value=1, inplace=True)
-
-    # Add GBIF records to template
+    # Add GBIF records to template; replace and fillna to support astype()
     records2 = (pd.DataFrame(columns=output_schema.keys())
-                .combine_first(records1))
+                .combine_first(records1)
+                .replace({"coordinateUncertaintyInMeters": {"UNKNOWN": np.nan},
+                               "radius_meters": {"UNKNOWN": np.nan},
+                               "individualCount": {"UNKNOWN": 1},
+                               "weight": {"UNKOWN": 10},
+                               "detection_distance_m": {"UNKNOWN": 0}})
+                .fillna({"coordinateUncertaintyInMeters": np.nan,
+                         "radius_meters": 0,
+                         "individualCount": 1,
+                         "weight": 10,
+                         "detection_distance_m": 0})
+                .astype(output_schema))
+    print("Prepared GBIF records for processing: " + str(datetime.now() - timestamp))
 
-    # Results
-    records2.to_csv(working_directory + "gbif_data.csv")
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  Results
+    records2.to_csv(working_directory + "gbif_data.csv")                            # CAN REMOVE THIS
     return records2
 
-def filter_records(ebird_data, gbif_data, filter_set, taxon_info, working_directory, query_name):
+def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_directory, query_name):
     '''
-    Summarizes the values in the data frames, apply filters, summarize what
-        values persisted after filtering.  Insert results into the output db.
+    Summarizes the values in the data frames, populates some fields,
+        apply filters, summarize what values persisted after filtering.  Insert
+        results into the output db.
 
     PARAMETERS
     ----------
@@ -836,17 +724,18 @@ def filter_records(ebird_data, gbif_data, filter_set, taxon_info, working_direct
         gbif_data = gbif_data.astype(string_atts)
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< REMOVE EBIRD FROM GBIF
-    if ebird_data is not None:
-        gbif_data = gbif_data[gbif_data["collectionCode"].str.contains("EBIRD*") == False]
+    if gbif_data is not None:
+        if ebird_data is not None:
+            gbif_data = gbif_data[gbif_data["collectionCode"].str.contains("EBIRD*") == False]
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  COMBINE DATA FRAMES
     if ebird_data is None:
-        records3 = gbif_data
+        df_unfiltered = gbif_data
     if gbif_data is None:
-        records3 = ebird_data
+        df_unfiltered = ebird_data
     if gbif_data is not None and ebird_data is not None:
         # Concatenate the gbif and ebird tables
-        records3 = pd.concat([ebird_data, gbif_data])
+        df_unfiltered = pd.concat([ebird_data, gbif_data])
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  SUMMARIZE VALUES
     timestamp = datetime.now()
@@ -857,10 +746,10 @@ def filter_records(ebird_data, gbif_data, filter_set, taxon_info, working_direct
                         'footprintSRS', 'footprintWKT', 'gbif_id', 'ebird_id',
                         'general_remarks', 'georeferencedBy', 'habitat',
                         'georeferenceRemarks', 'identificationQualifier',
-                        'identifiedby', 'identifiedRemarks', 'individualCount',
+                        'identifiedBy', 'identifiedRemarks', 'individualCount',
                         'informationWitheld', 'locality', 'locationAccordingTo',
-                        'locationRemarks', 'occurrenceRemarks', 'radius_meters',
-                        'record_id', 'recordedBy', 'retrieval_date',
+                        'locationRemarks', "modified", 'occurrenceRemarks',
+                        'radius_meters', 'record_id', 'recordedBy', 'retrieval_date',
                         'taxonConceptID', 'verbatimLocality', 'weight', 'weight_notes']
 
     # Make a function to do the summarizing
@@ -883,15 +772,65 @@ def filter_records(ebird_data, gbif_data, filter_set, taxon_info, working_direct
         return result
 
     # Store value summary in a dataframe
-    acquired = summarize_values(dataframe=records3, step='acquired')
+    acquired = summarize_values(dataframe=df_unfiltered, step='acquired')
 
     # Summarize sources
-    source_df1 = records3[['institutionID', 'collectionCode', 'datasetName', 'record_id']]
+    source_df1 = df_unfiltered[['institutionID', 'collectionCode', 'datasetName', 'record_id']]
     source_summary1 = (source_df1
                        .groupby(by=['institutionID', 'collectionCode', 'datasetName'])
                        .size()
                        .reset_index(name='acquired'))
     print("Summarized values acquired: " + str(datetime.now() - timestamp))
+
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  POPULATE SOME COLUMNS
+    df_unfiltered.fillna(value={'individualCount': int(1)}, inplace=True)
+    df_unfiltered["weight"] = 10
+    df_unfiltered["weight_notes"] = ""
+    df_unfiltered["taxon_id"] = taxon_info["ID"]
+    df_unfiltered["gbif_id"] = taxon_info["GBIF_ID"]
+    df_unfiltered["ebird_id"] = taxon_info["EBIRD_ID"]
+    df_unfiltered["detection_distance_m"] = taxon_info["detection_distance_m"]
+
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< GEOREFERENCE
+    '''
+    The point-radius method is used.  If footprintWKT is provided, it will be
+        used instead by generate_shapefile.  Components of uncertainty are
+        1) coordinate precision, 2) gps accuracy, 3) detection distance,
+        4) feature extent/geographic radial.
+    '''
+    # Where null, use coordinates to get precision                                 how to do this more exhaustively?
+    coordinate_precision = 1.11
+    df_unfiltered.fillna(value={'coordinatePrecision':coordinate_precision}, inplace=True)
+
+    # Split records into two data frames based on whether they're georeferenced
+    georef = df_unfiltered[df_unfiltered["coordinateUncertaintyInMeters"].isnull() == False].copy()
+    not_georef = df_unfiltered[df_unfiltered["coordinateUncertaintyInMeters"].isnull() == True].copy()
+    print("georef length: " + str(len(georef)))
+    print("not_georef length: " + str(len(not_georef)))
+
+    # If records are not georeferenced, approximate                               should only habppen to unreferenced records
+    if filter_set["default_coordUncertainty"] is not None:
+        print("using default")
+        not_georef["coordinateUncertaintyInMeters"] = filter_set["default_coordUncertainty"]
+
+    if filter_set["default_coordUncertainty"] is None:
+        print("approximating")
+        gps_accuracy = 30 # 100 if before 2000
+        feature_length = 0
+        not_georef["coordinateUncertaintyInMeters"] = not_georef["coordinatePrecision"] + gps_accuracy + feature_length
+
+    # Calculate radii in each case
+    not_georef["radius_meters"] = not_georef["coordinateUncertaintyInMeters"] + not_georef["detection_distance_m"]
+    georef["radius_meters"] = georef["coordinateUncertaintyInMeters"]
+
+    # Concat df's if necessary and then calculate radius_meters
+    if not_georef.empty == True or filter_set['has_coordinate_uncertainty'] == True:
+        df_unfiltered2 = georef
+    else:
+        df_unfiltered2 = pd.concat([georef, not_georef])
+
+    if len(df_unfiltered2) != len(df_unfiltered):
+        print("!! PROBLEM !!")
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  FILTER
     timestamp = datetime.now()
@@ -901,58 +840,40 @@ def filter_records(ebird_data, gbif_data, filter_set, taxon_info, working_direct
               'institutions_omit', 'issues_omit', 'sampling_protocols_omit']:
         if filter_set[x] == None:
             filter_set[x] = []
-
-    if filter_set['has_coordinate_uncertainty'] == 1:
-        records5 = records3[pd.isnull(records3['coordinateUncertaintyInMeters']) == False]
-    if filter_set['has_coordinate_uncertainty'] == 0:
-        records5 = records3
-
-    records6 = (records5[records5['coordinateUncertaintyInMeters'] <= filter_set['max_coordinate_uncertainty']]
+    print(len(df_unfiltered2))
+    print(filter_set)
+    df_filter2 = (df_unfiltered2[df_unfiltered2['coordinateUncertaintyInMeters'] <= filter_set['max_coordinate_uncertainty']]
                 [lambda x: x['collectionCode'].isin(filter_set['collection_codes_omit']) == False]
                 [lambda x: x['institutionID'].isin(filter_set['institutions_omit']) == False]
                 [lambda x: x['basisOfRecord'].isin(filter_set['bases_omit']) == False]
                 [lambda x: x['samplingProtocol'].isin(filter_set['sampling_protocols_omit']) == False]
                 [lambda x: x['datasetName'].isin(filter_set['datasets_omit']) == False]
                 )
-
+    print(len(df_filter2))
     ''' ISSUES are more complex because multiple issues can be listed per record
     Method used is complex, but hopefully faster than simple iteration over all records
     '''
-    records6.fillna(value={'issues': ""}, inplace=True)
+    df_filter2.fillna(value={'issues': ""}, inplace=True)
     # Format of issues entries differ by method, change json format to email format
     if filter_set['get_dwca'] == True:
-        records6['issues'] = [x.replace(', ', ';').replace('[', '').replace(']', '').replace("'", "")
-                              for x in records6['issues']]
-    unique_issue = list(records5['issues'].unique())
+        df_filter2['issues'] = [x.replace(', ', ';').replace('[', '').replace(']', '').replace("'", "")
+                              for x in df_filter2['issues']]
+    unique_issue = list(df_filter2['issues'].unique())
     violations = [x for x in unique_issue if len(set(str(x).split(";")) & set(filter_set['issues_omit'])) != 0] # entries that contain violations
-    records7 = records6[records6['issues'].isin(violations) == False] # Records without entries that are violations.
+    df_filter3 = df_filter2[df_filter2['issues'].isin(violations) == False] # Records without entries that are violations.
     print("Performed filtering: " + str(datetime.now() - timestamp))
-
-    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  POPULATE SOME COLUMNS
-    if filter_set["default_coordUncertainty"] != None:
-        records7.fillna(value={'coordinateUncertaintyInMeters': filter_set["default_coordUncertainty"]},
-                        inplace=True)
-    records7.fillna(value={'individualCount': int(1)}, inplace=True)
-    records7["detection_distance_m"] = taxon_info["detection_distance_m"]
-    records7["radius_meters"] = records7["detection_distance_m"] + records7["coordinateUncertaintyInMeters"]
-    #records7.fillna({'radius_meters': 0})
-    records7["weight"] = 10
-    records7["weight_notes"] = ""
-    records7["taxon_id"] = taxon_info["ID"]
-    records7["gbif_id"] = taxon_info["GBIF_ID"]
-    records7["ebird_id"] = taxon_info["EBIRD_ID"]
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  REMOVE SPACE-TIME DUPLICATES
     # Prep some columns by changing data type
-    records7 = (records7
+    df_filter3 = (df_filter3
                 .astype({'decimalLatitude': 'str', 'decimalLongitude': 'str'})
                 .reset_index(drop=True))
 
     if filter_set["duplicates_OK"] == False:
-        records8 = drop_duplicates_latlongdate(records7)
+        df_filterZ = drop_duplicates_latlongdate(df_filter3)
 
     if filter_set["duplicates_OK"] == True:
-        records8 = records7.copy()
+        df_filterZ = df_filter3.copy()
         print("DUPLICATES ON LATITUDE, LONGITUDE, DATE-TIME INCLUDED")
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  SPATIAL FILTERING
@@ -960,7 +881,7 @@ def filter_records(ebird_data, gbif_data, filter_set, taxon_info, working_direct
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  SUMMARIZE VALUES AGAIN
     # Store value summary in a dataframe
-    retained = summarize_values(dataframe=records8, step='retained')
+    retained = summarize_values(dataframe=df_filterZ, step='retained')
 
     # Concat acquired and retained data frames
     summary_df = pd.merge(retained, acquired, on=['attribute', 'value'], how='inner')
@@ -971,7 +892,7 @@ def filter_records(ebird_data, gbif_data, filter_set, taxon_info, working_direct
                              'retained']]
 
     # Summarize sources
-    source_df2 = records8[['institutionID', 'collectionCode', 'datasetName', 'record_id']]
+    source_df2 = df_filterZ[['institutionID', 'collectionCode', 'datasetName', 'record_id']]
     source_summary2 = (source_df2
                        .groupby(by=['institutionID', 'collectionCode', 'datasetName'])
                        .size()
@@ -994,7 +915,7 @@ def filter_records(ebird_data, gbif_data, filter_set, taxon_info, working_direct
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  SAVE
     # Reformat data to strings and insert into db.
-    records7.applymap(str).to_sql(name='occurrence_records', con = conn,
+    df_filterZ.applymap(str).to_sql(name='occurrence_records', con = conn,
                                   if_exists='replace')
     conn.close()
     return None
@@ -1162,58 +1083,6 @@ def get_record_details(key):
     details = occurrences.get(key = key)
     return details
 
-def generate_shapefile(database, output_file, footprints=True):
-    '''
-    Exports a shapefile of species occurrence records from a wildlife wrangler
-        output SQLite database.
-
-    PARAMETERS
-    database : the sqlite database to use.
-    output_file : Path (and name) of the file to be created.
-    footprints : True creates a map of record footprints (buffered coordinates),
-        whereas False returns records as points base on coordinates provided.
-
-    OUTPUT
-    shapefile saved to disk
-    '''
-    from datetime import datetime
-    import sqlite3
-    import pandas as pd
-    import geopandas as gpd
-    timestamp = datetime.now()
-
-    # Get the record coordinates as a data frame
-    records = (pd.read_sql("""SELECT * FROM occurrence_records;""",
-                           con=sqlite3.connect(database))
-                          .astype({'decimalLongitude': 'float',
-                                   'decimalLatitude': 'float',
-                                   'radius_meters': 'float'}))
-
-    # Make a point geometry from coordinates
-    gdf = gpd.GeoDataFrame(records,
-                           geometry=gpd.points_from_xy(records['decimalLongitude'],
-                                                       records['decimalLatitude']))
-
-    # Set the coordinate reference system
-    gdf.crs={'init' :'epsg:4326'}
-
-    # Save points OR
-    if footprints == False:
-        gdf.to_file(outFile)
-
-    # Save polygons (footprints)
-    if footprints == True:
-        # Reproject states and record coordinates to facilitate buffering
-        footprints = gdf.to_crs(epsg=5070)
-
-        # Buffer points with appropriate radii for record footprints
-        footprints['footprint']=footprints.apply(lambda x: x.geometry.buffer(x.radius_meters), axis=1)
-        footprints.set_geometry(col='footprint', inplace=True, drop=True)
-        footprints.to_file(outFile)
-
-    print("Exported shapefile: " + str(datetime.now() - timestamp))
-    return
-
 def ccw_wkt_from_shapefile(shapefile, out_txt):
     """
     Creates wkt with coordinates oriented counter clockwise for a given shapefile.
@@ -1265,4 +1134,60 @@ def ccw_wkt_from_shapefile(shapefile, out_txt):
         c.close()
     else:
         print("You need to reproject the shapefile to EPSG:4326")
+    return
+
+def generate_shapefile(database, output_file, footprints=True):
+    '''
+    Exports a shapefile of species occurrence records from a wildlife wrangler
+        output SQLite database.
+
+    PARAMETERS
+    database : the sqlite database to use.
+    output_file : Path (and name) of the file to be created.
+    footprints : True creates a map of record footprints (buffered coordinates),
+        whereas False returns records as points base on coordinates provided.
+
+    OUTPUT
+    shapefile saved to disk
+    '''
+    from datetime import datetime
+    import sqlite3
+    import pandas as pd
+    import geopandas as gpd
+    timestamp = datetime.now()
+
+    # Get the record coordinates as a data frame
+    records = (pd.read_sql("""SELECT * FROM occurrence_records;""",
+                           con=sqlite3.connect(database))
+                          .astype({'decimalLongitude': 'float',
+                                   'decimalLatitude': 'float',
+                                   'radius_meters': 'float'}))
+
+    # Make a point geometry from coordinates
+    gdf = gpd.GeoDataFrame(records,
+                           geometry=gpd.points_from_xy(records['decimalLongitude'],
+                                                       records['decimalLatitude']))
+
+    # Set the coordinate reference system
+    gdf.crs={'init' :'epsg:4326'}
+
+    # Save points OR
+    if footprints == False:
+        gdf.to_file(outFile)
+
+    # Save polygons (footprints)
+    if footprints == True:
+        # Reproject states and record coordinates to facilitate buffering
+        footprints = gdf.to_crs(epsg=5070)
+
+        # Point-radius method
+        footprints['footprint']=footprints.apply(lambda x: x.geometry.buffer(x.radius_meters), axis=1)
+        footprints.set_geometry(col='footprint', inplace=True, drop=True)
+
+        # Shape method
+
+
+        footprints.to_file(outFile)
+
+    print("Exported shapefile: " + str(datetime.now() - timestamp))
     return
