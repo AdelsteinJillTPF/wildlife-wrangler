@@ -108,9 +108,6 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
     -------
     Data frame of eBird records
     '''
-    import rpy2.robjects as robjects
-    import rpy2.robjects.packages as rpackages
-    from rpy2.robjects.vectors import StrVector
     import pandas as pd
     from datetime import datetime
     import sqlite3
@@ -118,6 +115,9 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
     import shapely
     from shapely.wkt import dumps, loads
     import numpy as np
+    import rpy2.robjects as robjects
+    import rpy2.robjects.packages as rpackages
+    from rpy2.robjects.vectors import StrVector
 
     # import R's utility package, select a mirror for R packages
     utils = rpackages.importr('utils')
@@ -138,6 +138,9 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
     for x in filter_set.keys():
         if filter_set[x] == None:
             filter_set[x] = ""
+    for x in taxon_info.keys():
+        if taxon_info[x] == None:
+            taxon_info[x] = ""
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< R CODE
     code = '''
@@ -343,6 +346,14 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
         EOO = None
 
     # A geometry could be stated for the species, assess what to do
+    # Replace "" values in fitler_set with None to fit Python code.
+    for x in filter_set.keys():
+        if filter_set[x] == "":
+            filter_set[x] = None
+    for x in taxon_info.keys():
+        if taxon_info[x] == "":
+            taxon_info[x] = None
+            
     EOO = taxon_info["TAXON_EOO"]
     AOI = filter_set["query_polygon"]
     if AOI is None and EOO is None:
@@ -502,7 +513,7 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
             filter_polygon = shapely.wkt.dumps(intersection)
 
     #print(shapely.wkt.loads(filter_polygon).exterior.is_ccw)
-    print("Got request params and sorted out geometry constraints: " + str(datetime.now() - timestamp))
+    print("Prepard filter set and sorted out geometry constraints: " + str(datetime.now() - timestamp))
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< GET RECORD COUNT
     timestamp = datetime.now()
@@ -555,11 +566,12 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
             missing_keys = list(api_keys - set(j.keys()))
             for mik in missing_keys:
                 insertDict[mik] = insertDict[mik] + ["UNKNOWN"]
-        dfRaw = pd.DataFrame(insertDict)
+        dfRaw = pd.DataFrame(insertDict).rename({"occurrenceID": "record_id"}, axis=1)
         print("Downloaded records: " + str(datetime.now() - timestamp))
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< EMAIL QUERY
     if dwca_download == True:
+        timestamp = datetime.now()
         '''
         Request data using the download function.  Results are emailed.
         '''
@@ -585,7 +597,6 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
         if lonRange  is not None:
             download_filters.append('decimalLongitude >= {0}'.format(lonRange.split(",")[0]))
             download_filters.append('decimalLongitude <= {0}'.format(lonRange.split(",")[1]))
-        timestamp = datetime.now()
         print(download_filters)
 
         # Get the value of the download key
@@ -643,9 +654,17 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  SUMMARIZE
     timestamp = datetime.now()
-    df_populated1 = pd.DataFrame(dfRaw.count(axis=0).T.iloc[1:])
-    df_populated1['included(n)'] = len(dfRaw)
-    df_populated1['populated(n)'] = df_populated1[0]
+    if dwca_download == False: # We don't want to count the "UNKNOWNS" we added.
+        df_raw2 = dfRaw.replace({"UNKNOWN": np.nan})
+        df_populated1 = pd.DataFrame(df_raw2.count(axis=0).T.iloc[1:])
+        df_populated1['included(n)'] = df_populated1[0]
+        df_populated1['populated(n)'] = df_populated1[0]
+
+    if dwca_download == True:
+        df_raw2 = dfRaw.copy()
+        df_populated1 = pd.DataFrame(df_raw2.count(axis=0).T.iloc[1:])
+        df_populated1['included(n)'] = len(dfRaw)
+        df_populated1['populated(n)'] = df_populated1[0]
     df_populated2 = df_populated1.filter(items=['included(n)', 'populated(n)'],
                                          axis='columns')
     df_populated2.index.name = 'attribute'
@@ -655,12 +674,12 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  PREPARE
     timestep = datetime.now()
     # Rename columns
-    records1 = dfRaw.rename({"issue": "issues", 'id': 'record_id'}, axis=1)
+    records1 = dfRaw.rename({"issue": "issues", "id": "record_id"}, axis=1)
     # Drop columns
     records1 = records1.filter(items=output_schema.keys(), axis=1)
     # Populate columns
     records1["retrieval_date"] = str(datetime.now())
-    if filter_set['get_dwca'] == True:
+    if filter_set["get_dwca"] == True:
         records1["GBIF_download_doi"] = doi
     else:
         records1["GBIF_download_doi"] = "bypassed"
@@ -708,6 +727,7 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
     import pandas as pd
     from datetime import datetime
     import fnmatch
+    timestamp = datetime.now()
 
     # Create or connect to the database
     output_database = working_directory + query_name + ".sqlite"
@@ -736,6 +756,7 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
     if gbif_data is not None and ebird_data is not None:
         # Concatenate the gbif and ebird tables
         df_unfiltered = pd.concat([ebird_data, gbif_data])
+    print("Prepared data frames for processing: " + str(datetime.now() - timestamp))
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  SUMMARIZE VALUES
     timestamp = datetime.now()
@@ -783,6 +804,7 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
     print("Summarized values acquired: " + str(datetime.now() - timestamp))
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  POPULATE SOME COLUMNS
+    timestamp = datetime.now()
     df_unfiltered.fillna(value={'individualCount': int(1)}, inplace=True)
     df_unfiltered["weight"] = 10
     df_unfiltered["weight_notes"] = ""
@@ -805,16 +827,16 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
     # Split records into two data frames based on whether they're georeferenced
     georef = df_unfiltered[df_unfiltered["coordinateUncertaintyInMeters"].isnull() == False].copy()
     not_georef = df_unfiltered[df_unfiltered["coordinateUncertaintyInMeters"].isnull() == True].copy()
-    print("georef length: " + str(len(georef)))
-    print("not_georef length: " + str(len(not_georef)))
+    print("Number of georeferenced records: " + str(len(georef)))
+    print("Number of record without georeference: " + str(len(not_georef)))
 
     # If records are not georeferenced, approximate                               should only habppen to unreferenced records
     if filter_set["default_coordUncertainty"] is not None:
-        print("using default")
+        print("Applying default coordinate uncertainties")
         not_georef["coordinateUncertaintyInMeters"] = filter_set["default_coordUncertainty"]
 
     if filter_set["default_coordUncertainty"] is None:
-        print("approximating")
+        print("Approximating coordinate uncertanties")
         gps_accuracy = 30 # 100 if before 2000
         feature_length = 0
         not_georef["coordinateUncertaintyInMeters"] = not_georef["coordinatePrecision"] + gps_accuracy + feature_length
@@ -830,18 +852,18 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
         df_unfiltered2 = pd.concat([georef, not_georef])
 
     if len(df_unfiltered2) != len(df_unfiltered):
-        print("!! PROBLEM !!")
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PROBLEM !!")
+    else:
+        print("Prepared and georeferenced records:" + str(datetime.now() - timestamp))
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  FILTER
     timestamp = datetime.now()
-
     # Some filters to be prepped for use
     for x in ['bases_omit', 'collection_codes_omit', 'datasets_omit',
               'institutions_omit', 'issues_omit', 'sampling_protocols_omit']:
         if filter_set[x] == None:
             filter_set[x] = []
-    print(len(df_unfiltered2))
-    print(filter_set)
+
     df_filter2 = (df_unfiltered2[df_unfiltered2['coordinateUncertaintyInMeters'] <= filter_set['max_coordinate_uncertainty']]
                 [lambda x: x['collectionCode'].isin(filter_set['collection_codes_omit']) == False]
                 [lambda x: x['institutionID'].isin(filter_set['institutions_omit']) == False]
@@ -849,7 +871,7 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
                 [lambda x: x['samplingProtocol'].isin(filter_set['sampling_protocols_omit']) == False]
                 [lambda x: x['datasetName'].isin(filter_set['datasets_omit']) == False]
                 )
-    print(len(df_filter2))
+
     ''' ISSUES are more complex because multiple issues can be listed per record
     Method used is complex, but hopefully faster than simple iteration over all records
     '''
@@ -866,8 +888,8 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  REMOVE SPACE-TIME DUPLICATES
     # Prep some columns by changing data type
     df_filter3 = (df_filter3
-                .astype({'decimalLatitude': 'str', 'decimalLongitude': 'str'})
-                .reset_index(drop=True))
+                  .astype({'decimalLatitude': 'str', 'decimalLongitude': 'str'})
+                  .reset_index(drop=True))
 
     if filter_set["duplicates_OK"] == False:
         df_filterZ = drop_duplicates_latlongdate(df_filter3)
@@ -880,6 +902,7 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
     # Spatial filtering happens in the get functions (ebird and gbif), not here.
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  SUMMARIZE VALUES AGAIN
+    timestamp = datetime.now()
     # Store value summary in a dataframe
     retained = summarize_values(dataframe=df_filterZ, step='retained')
 
@@ -912,6 +935,7 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
     # Save the summaries in the output database
     summary_df.to_sql(name='attribute_value_counts', con = conn, if_exists='replace')
     source_summaries.to_sql(name='sources', con = conn, if_exists='replace')
+    print("Saved summary of filtering results: " + str(datetime.now() - timestamp))
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  SAVE
     # Reformat data to strings and insert into db.
@@ -963,6 +987,7 @@ def drop_duplicates_latlongdate(df):
 
     # Record df length before removing duplicates
     initial_length = len(df)
+    df = df.astype(output_schema)
 
     """
     ############ RECTIFY UNEQUAL LAT-LONG PRECISION
