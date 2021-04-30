@@ -21,6 +21,19 @@ The user begins by creating a copy of the __report_TEMPLATE.ipynb__, which they 
 *  __wranglerconfig.py__ -- this is a .py file where you store some personal information that you wouldn't want saved in the notebook document: your email address and password for your GBIF account, which is needed in order to request downloads from GBIF.  A file path to an eBird Basic Dataset is saved here as well.
 *  __wrangler_functions.py__ -- a python module containing the core functions of the wrangler.  DO NOT CHANGE THIS!  Much of the necessary code is kept here to avoid having a thousand lines of code in the report.ipynb.  You can call some helper functions from this by importing the module in ipython (i.e., "import wrangler_functions as wranglers").  That can be handy for using the "get_GBIF_code" and "generate_shapefile" functions.
 
+#### Key Processes Explained
+* __Removing Duplicate Records__ -- Queries commonly include duplicates based on the latitude, longitude, and date fields.  The user can opt to keep or exclude duplicates.  If they choose to exclude them, a multi-step process is triggered to account for two major issues.  One, the values of latitude and longitude for a record may have different numbers of digits to the right of the decimal (i.e., latitude has eight decimals but longitude has six).  Two, not all records have the same number of digits to the right of the decimal for latitude and longitude (i.e., one record may have two for latitude and longitude while another has 12).  The process used is as follows:
+  1. Latitude and longitude values of each record are truncated to the shorter of the two in cases where they differ.
+  2. If duplicates occur after that step, then the one with the largest individual count is kept, or the first if individual counts are the same.
+  3. Records are identified that are a duplicate of a record with higher precision (e.g. (10.123, -10.123) would be flagged as a duplicate of (10.1234, -10.1234)).
+  4. Duplicates are removed.
+
+
+* __Incorporating Locational Uncertainty__ -- Species occurrence records represent events that occurred at specific locations, and thus they have spatial extents and positions.  The geographical boundaries of observation events are defined by the observation method used and/or the observer’s behavior.  For spatial analyses and summaries, records must be assigned to geographic extents, and that process is referred to as georeferencing.  The geographic extents of observation events vary in size and shape and are rarely precisely mapped; usually, they must be approximated with information that has been associated with a record, such as spatial coordinates and text describing a location.  
+
+Given that the geographic boundaries of many occurrence records in GBIF and eBird are not precisely mapped, we have to identify strategies for approximating them, as well as the sources of uncertainty.  In Chapman and Wieczorek’s (2020) description of best practices for georeferencing, they identify methods for georeferencing and the components of geographical uncertainties regarding the locations of observations.  The Wildlife Wrangler employs logic and methods that are meant to match the terminology, concepts, and methods presented by Chapman and Wieczorek (2020) to the best extent possible, with the goal of identifying or approximating a spatial representation of the entire location, including all uncertainties involved.
+
+
 #### Detailed Instructions
 1.  Copy "__report_TEMPLATE.ipynb__" to a location outside of the wrangler repo, say to your project directory.  Rename the notebook document to whatever you like.
 2.  In conda, activate your wrangler environment.  Open Jupyter Notebook and navigate to your renamed copy of __"report_TEMPLATE.ipynb"__.  

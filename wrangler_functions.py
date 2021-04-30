@@ -353,7 +353,7 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
     for x in taxon_info.keys():
         if taxon_info[x] == "":
             taxon_info[x] = None
-            
+
     EOO = taxon_info["TAXON_EOO"]
     AOI = filter_set["query_polygon"]
     if AOI is None and EOO is None:
@@ -1216,3 +1216,9 @@ def generate_shapefile(database, output_file, footprints=True):
 
     print("Exported shapefile: " + str(datetime.now() - timestamp))
     return
+
+def CONUS_bbox():
+    """
+    Returns the bounding box of the conterminous U.S. as a tuple.
+    """
+    bbox = (-171.791110603, 18.91619, -66.96466, 71.3577635769)
