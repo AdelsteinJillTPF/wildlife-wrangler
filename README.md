@@ -14,7 +14,7 @@ IP-120038
 https://doi.org/10.5066/P98K7E93
 
 ## Purpose
-The abundance of wildlife occurrence data sets that are currently accessible can be valuable for efforts such as species distribution modeling and range delineation.  However, the task of downloading and filtering occurrence records is often complex due to errors and uncertainties that are present in data sets (Tessarolo et al. 2017).  This repository provides a framework for acquiriing and filtering occurrence data that are freely available through the Global Biodiversity Information Facility's ([GBIF](https://gbif.org)) API and eBird Basic Dataset ([EBD](https://ebird.org/science/use-ebird-data/)).     
+The abundance of wildlife occurrence data sets that are currently accessible can be valuable for efforts such as species distribution modeling and range delineation.  However, the task of downloading and filtering occurrence records is often complex due to errors and uncertainties that are present in data sets (Tessarolo et al. 2017).  This repository provides a framework for acquiring and filtering occurrence data that are freely available through the Global Biodiversity Information Facility's ([GBIF](https://gbif.org)) API and eBird Basic Dataset ([EBD](https://ebird.org/science/use-ebird-data/)).     
 
 ## Framework
 Records are requested from occurrence data sets and filtered according to species- and query-specific parameters.  Filtered occurrence records are saved in a database.  The details of taxa concepts and filter parameters can be stored as JSON files for reuse and reference.  Additionally, Jupyter Notebook documents are created that describe the filtered data sets for the sake of documentation and filter set refinement.
