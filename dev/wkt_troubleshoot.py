@@ -68,11 +68,20 @@ po0ly2 = shapely.wkt.loads(po0ly)
 po0ly2.exterior.is_ccw
 
 
+download_filters = ["taxonKey = 2496287",
+"geometry within 'POLYGON ((-82.7 36.9, -85.0 35.6, -81.0 33.5, -79.4 36.3, -79.4 36.3, -82.7 36.9))'"]
+
+download = occurrences.download(download_filters,
+pred_type='and',
+user = username,
+pwd = password,
+email = email)
 
 from pygbif import occurrences # I'm using version 0.5.0
 
 download_filters = ["taxonKey = 2496287",
                     "geometry = 'POLYGON ((-82.7 36.9, -85.0 35.6, -81.0 33.5, -79.4 36.3, -79.4 36.3, -82.7 36.9))'"]
+download_filters = ["taxonKey = 2496287"]
 
 download = occurrences.search(download_filters,
                                 pred_type='and',
@@ -80,7 +89,23 @@ download = occurrences.search(download_filters,
                                 pwd = password,
                                 email = email)
 
-
+############################
 from pygbif import utils
 x = 'POLYGON ((-82.7 36.9, -85.0 35.6, -81.0 33.5, -79.4 36.3, -79.4 36.3, -82.7 36.9))'
 utils.wkt_rewind(x)
+
+######################
+from pygbif import occurrences
+
+username = "gapper"
+password = "pythonprocessing@gmail.com"
+email = "metspirates"
+
+download_filters = ["taxonKey = 2496287",
+"geometry within 'POLYGON ((-82.7 36.9, -85.0 35.6, -81.0 33.5, -79.4 36.3, -79.4 36.3, -82.7 36.9))'"]
+
+download = occurrences.download(download_filters,
+                                pred_type='and',
+                                user = username,
+                                pwd = password,
+                                email = email)

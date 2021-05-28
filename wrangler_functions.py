@@ -414,6 +414,7 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
     records1["source"] = "eBird"
     records1["basisOfRecord"] = "HUMAN_OBSERVATION"
     records1["GBIF_download_doi"] = "bypassed"
+    records1["occurrenceStatus"] = "PRESENT"
 
     # Add EBD records to a template dataframe
     schema_df = pd.DataFrame(columns=list(output_schema.keys()))
@@ -852,7 +853,7 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
         df_unfiltered2 = pd.concat([georef, not_georef])
 
     if len(df_unfiltered2) != len(df_unfiltered):
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PROBLEM !!")
+        print("AN ERROR OCCURRED !!!!!!!!!!!!!")
     else:
         print("Prepared and georeferenced records:" + str(datetime.now() - timestamp))
 
@@ -870,6 +871,7 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
                 [lambda x: x['basisOfRecord'].isin(filter_set['bases_omit']) == False]
                 [lambda x: x['samplingProtocol'].isin(filter_set['sampling_protocols_omit']) == False]
                 [lambda x: x['datasetName'].isin(filter_set['datasets_omit']) == False]
+                [lambda x: x['occurrenceStatus'] != "ABSENT"]
                 )
 
     ''' ISSUES are more complex because multiple issues can be listed per record
