@@ -989,7 +989,7 @@ def drop_duplicates_latlongdate(df):
 
     # Record df length before removing duplicates
     initial_length = len(df)
-    df = df.astype(output_schema)
+    #df = df.astype(output_schema)
 
     """
     ############ RECTIFY UNEQUAL LAT-LONG PRECISION
