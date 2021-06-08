@@ -515,7 +515,7 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
             filter_polygon = shapely.wkt.dumps(intersection)
 
     #print(shapely.wkt.loads(filter_polygon).exterior.is_ccw)
-    print("Prepard filter set and sorted out geometry constraints: " + str(datetime.now() - timestamp))
+    print("Prepared filter set and sorted out geometry constraints: " + str(datetime.now() - timestamp))
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< GET RECORD COUNT
     timestamp = datetime.now()
@@ -1264,11 +1264,13 @@ def verify_results(database):
         print("!!! Failed occurrenceStatus test: " + str(presabs))
 
     # DWCA archive -------------------------------------------------------------
-    if filter_set.loc["get_dwca", "value"] == "True":
-        try:
-            conn.execute("SELECT download_key FROM GBIF_download_info;").fetchall()
-        except:
-            print("!!! Failed DWCA download key test")
+    gbif_yn = [x[0] for x in conn.execute("SELECT DISTINCT source FROM occurrence_records;").fetchall()]
+    if 'GBIF' in gbif_yn:
+        if filter_set.loc["get_dwca", "value"] == "True":
+            try:
+                conn.execute("SELECT download_key FROM GBIF_download_info;").fetchall()
+            except:
+                print("!!! Failed DWCA download key test")
 
     # Latitude range -----------------------------------------------------------
     lat_range = filter_set.loc["lat_range", "value"]
