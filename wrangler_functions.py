@@ -170,7 +170,7 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
     # auk doesn't allow filtering on months AND year with read_ebd; they have to be
     #   done separately, one with auk filters and the other after with dplyr.  I
     #   chose to do the year filtering with auk to minimize size of returned tibble.
-    #   This all requires formatting dates as text correctly
+    #   This all requires formatting dates as text correctly.
     # format start month
     if (months_range != "") {{
       if (as.numeric(strsplit(months_range, ",")[[1]][1]) < 10) {{
@@ -189,6 +189,7 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
       # create vector of ok months for filtering with dplyr
       ok_months <- seq(as.numeric(start_month), as.numeric(end_month))
     }}
+    print(ok_months)
 
     # pull out start and end years
     if (years_range != "") {{
@@ -1224,3 +1225,168 @@ def CONUS_bbox():
     Returns the bounding box of the conterminous U.S. as a tuple.
     """
     bbox = (-171.791110603, 18.91619, -66.96466, 71.3577635769)
+
+def verify_results(database):
+    '''
+    Compares the occurrence record attributes to the filters that were supposed to be applied.
+
+
+    PARAMETERS
+    ---------
+    database: path to a wrangler output database.  Like ""Z:/Occurrence_Records/test1.sqlite""
+
+    RESULTS
+    -------
+    prints messages if tests are failed. No output indicates all tests were passed.
+    '''
+    import sqlite3
+    import pandas as pd
+    import geopandas as gpd
+    import shapely
+
+    # Connect to a database
+    conn = sqlite3.connect(database)
+    cursor = conn.cursor()
+
+    # Get the taxon concept ----------------------------------------------------
+    taxon_concept = (pd.read_sql(sql="SELECT * FROM taxon_concept;", con=conn)
+                     .rename({"index": "key", "0": "value"}, axis=1)
+                     .set_index("key"))
+
+    # Get the filter set that was applied --------------------------------------
+    filter_set = (pd.read_sql(sql="SELECT * FROM filter_set", con=conn)
+                  .rename({"index": "parameter", "0": "value"}, axis=1)
+                  .set_index("parameter"))
+
+    # Presence only ------------------------------------------------------------
+    presabs = [x[0] for x in conn.execute("SELECT DISTINCT occurrenceStatus FROM occurrence_records;").fetchall()]
+    if presabs != ["PRESENT"] and presabs != ['nan', 'PRESENT']:
+        print("!!! Failed occurrenceStatus test: " + str(presabs))
+
+    # DWCA archive -------------------------------------------------------------
+    if filter_set.loc["get_dwca", "value"] == "True":
+        try:
+            conn.execute("SELECT download_key FROM GBIF_download_info;").fetchall()
+        except:
+            print("!!! Failed DWCA download key test")
+
+    # Latitude range -----------------------------------------------------------
+    lat_range = filter_set.loc["lat_range", "value"]
+    if lat_range != "None":
+        lat_range = [float(x) for x in lat_range.split(",")]
+        max_lat = float(conn.execute("SELECT MAX(decimalLatitude) FROM occurrence_records;").fetchall()[0][0])
+        min_lat = float(conn.execute("SELECT MIN(decimalLatitude) FROM occurrence_records;").fetchall()[0][0])
+        if (min_lat < lat_range[0] or max_lat > lat_range[1]):
+            print("!!! Failed test of decimalLatitude values")
+
+    # Longitude range ----------------------------------------------------------
+    lon_range = filter_set.loc["lon_range", "value"]
+    if lon_range != "None":
+        lon_range = [float(x) for x in lon_range.split(",")]
+        max_lon = float(conn.execute("SELECT MAX(decimalLongitude) FROM occurrence_records;").fetchall()[0][0])
+        min_lon = float(conn.execute("SELECT MIN(decimalLongitude) FROM occurrence_records;").fetchall()[0][0])
+        if (min_lon < lon_range[0] or max_lon > lon_range[1]):
+            print("!!! Failed test of decimalLongitude values")
+
+    # Years range --------------------------------------------------------------
+    yrs_range = filter_set.loc["years_range", "value"]
+    if yrs_range != "None":
+        yrs_range = [float(x) for x in yrs_range.split(",")]
+        max_yr = float(conn.execute("SELECT MAX(strftime('%Y', eventDate)) FROM occurrence_records;").fetchall()[0][0])
+        min_yr = float(conn.execute("SELECT MIN(strftime('%Y', eventDate)) FROM occurrence_records;").fetchall()[0][0])
+        if (min_yr < yrs_range[0] or max_yr > yrs_range[1]):
+            print("!!! Failed test of year (eventDate) values")
+
+    # Months range -------------------------------------------------------------
+    months_range = filter_set.loc["months_range", "value"]
+    if months_range != "None":
+        months_range = [float(x) for x in months_range.split(",")]
+        max_month = float(conn.execute("SELECT MAX(strftime('%m', eventDate)) FROM occurrence_records;").fetchall()[0][0])
+        min_month = float(conn.execute("SELECT MIN(strftime('%m', eventDate)) FROM occurrence_records;").fetchall()[0][0])
+        # Months range could be like 1,12
+        if months_range[0] < months_range[1]:
+            if (min_month < months_range[0] or max_month > months_range[1]):
+                print("!!! Failed test of month (eventDate) values")
+        # Months range could be like 11,3
+        if months_range[0] > months_range[1]:
+            no_months = list(range(months_range[1] + 1, months_range[0]) -1)
+            months = conn.execute("SELECT DISTINCT strftime('%m', eventDate) FROM occurrence_records;").fetchall()
+            months = [int(x[0]) for x in months]
+            if len(set(months) & set(no_months)) != 0:
+                print("!!! Failed test of month (eventDate) values")
+
+    # eBird ID -----------------------------------------------------------------
+    ebd_yn = [x[0] for x in conn.execute("SELECT DISTINCT source FROM occurrence_records;").fetchall()]
+    ebirdid = conn.execute("SELECT DISTINCT ebird_id FROM occurrence_records;").fetchall()[0][0]
+    out_ebirdid = taxon_concept.loc["EBIRD_ID", "value"]
+    if 'eBird' in ebd_yn:
+        if ebirdid != out_ebirdid:
+            print("!!! Failed test of ebird_id")
+
+    # GBIF ID ------------------------------------------------------------------
+    gbifid = conn.execute("SELECT DISTINCT gbif_id FROM occurrence_records;").fetchall()[0][0]
+    out_gbifid = taxon_concept.loc["GBIF_ID", "value"]
+    if gbifid != out_gbifid:
+        print("!!! Failed test of gbif_id")
+
+    # Maximum coordinate uncertainty -------------------------------------------
+    mcu_out = float(conn.execute("SELECT MAX(coordinateUncertaintyInMeters) FROM occurrence_records;").fetchall()[0][0])
+    dd = float(taxon_concept.loc["detection_distance_m", "value"])
+    mcu = float(filter_set.loc["max_coordinate_uncertainty", "value"])
+    if mcu_out > mcu:
+        print("!!! Failed test of maximum coordinate uncertainty. Max = " + str(mcu_out))
+
+    # Various ------------------------------------------------------------------
+    multilists = {"issues_omit": "issues", "sampling_protocols_omit": "samplingProtocol", "bases_omit": "basisOfRecord",
+                  "datasets_omit": "datasetName", "collection_codes_omit": "collectionCode", "institutions_omit": "institutionID"}
+
+    def test_multilist(attribute):
+        '''Test attribute values that involove multilists'''
+        values = set([])
+        data = [x[0].split("; ") for x in conn.execute("SELECT DISTINCT {0} FROM occurrence_records;".format(multilists[attribute])).fetchall()]
+        for x in data:
+            values = set(x) | values
+        invalid = set(filter_set.loc[attribute, "value"].replace("'", "").replace("[", "").replace("]", "").split(", "))
+        if len(invalid & values) >=1:
+            print("!!! Failed test of {0}.".format(multilists[attribute]))
+
+    for x in multilists.keys():
+        test_multilist(x)
+
+    # Duplicates ---------------------------------------------------------------
+    if filter_set.loc["duplicates_OK", "value"] == "False":
+        records = pd.read_sql("SELECT decimalLatitude, decimalLongitude, eventDate FROM occurrence_records;", con=conn)
+        if len(records[records.duplicated() == True]) >= 1:
+            print("!!! Failed test for duplicates")
+
+    # Test spatial parameters --------------------------------------------------
+    records2 = (pd.read_sql("""SELECT * FROM occurrence_records;""", con=conn)
+                .astype({'decimalLongitude': 'float',
+                         'decimalLatitude': 'float',
+                         'radius_meters': 'float'}))
+
+    # Make a point geometry from coordinates
+    gdf = gpd.GeoDataFrame(records2,
+                           geometry=gpd.points_from_xy(records2['decimalLongitude'],
+                                                       records2['decimalLatitude']))
+
+    # Set the coordinate reference system
+    gdf.crs={'init' :'epsg:4326'}
+
+    # Test species extent of occurrence polygon
+    if filter_set.loc["use_taxon_geometry", "value"] == "True":
+        if taxon_concept.loc["TAXON_EOO", "value"] != "None":
+            poly = shapely.wkt.loads(taxon_concept.loc["TAXON_EOO", "value"])
+            gdf_eoo = gdf[~gdf["geometry"].within(poly)]
+            if len(gdf_eoo) >= 1:
+                print("!!! Failed species extent of occurrence test.")
+
+    # Test query polygon
+    if filter_set.loc["query_polygon", "value"] != "None":
+        poly = shapely.wkt.loads(filter_set.loc["query_polygon", "value"])
+        gdf_query = gdf[~gdf["geometry"].within(poly)]
+        if len(gdf_query) >= 1:
+            print("!!! Failed query polygon test.")
+
+    conn.close()
+    return
