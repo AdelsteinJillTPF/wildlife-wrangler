@@ -4,6 +4,7 @@ output_schema = {"GBIF_download_doi": "str",
                  "basisOfRecord": "str",
                  "bibliographicCitation": "str",
                  "collectionCode": "str",
+                 "coordinatePrecision": "float",
                  "coordinateUncertaintyInMeters": "float",
                  "dataGeneralizations": "str",
                  "datasetName": "str",
@@ -11,6 +12,7 @@ output_schema = {"GBIF_download_doi": "str",
                  "decimalLongitude": "str",
                  "detection_distance_m": "int",
                  "ebird_id": "str",
+                 "effort_distance_m": "int",
                  "establishmentMeans": "str",
                  "eventDate": "str",
                  "eventRemarks": "str",
@@ -24,6 +26,7 @@ output_schema = {"GBIF_download_doi": "str",
                  "georeferenceRemarks": "str",
                  "georeferenceVerificationStatus": "str",
                  "georeferencedBy": "str",
+                 "gps_accuracy_m": "int",
                  "habitat": "str",
                  "identificationQualifier": "str",
                  "identifiedBy": "str",
@@ -37,9 +40,10 @@ output_schema = {"GBIF_download_doi": "str",
                  "locationAccordingTo": "str",
                  "locationRemarks": "str",
                  "modified": "str",
+                 "nominal_xy_precision": "float",
                  "occurrenceRemarks": "str",
                  "occurrenceStatus": "str",
-                 "radius_meters": "float",
+                 "radius_m": "float",
                  "record_id": "str",
                  "recordedBy": "str",
                  "retrieval_date": "str",
@@ -263,7 +267,8 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
 
     # account for gps precision in distance filter.  error could exist on either
     #   end of a straight line path, so double precision when subtracting.
-    max_distance <- as.integer(ceiling((max_coordinate_uncertainty-2*EBD_gps_precision)/1000))  ### NOT WORKING
+    max_distance <- as.integer(ceiling((max_coordinate_uncertainty-(2*EBD_gps_precision))/1000))  ### NOT WORKING????
+    print(max_distance)
 
     # query --------------------------------------------------------------------
     records0 <- EBD_file %>%
@@ -297,7 +302,6 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
                         protocol_type, effort_area_ha, trip_comments,
                         species_comments) %>%
                  mutate(effort_distance_m = as.numeric(effort_distance_km)*1000) %>%
-                 mutate(coordinateUncertaintyInMeters = effort_distance_m + (2*EBD_gps_precision)) %>%
                  filter(month(observation_date) %in% ok_months) %>%
                  write_csv(processed_ebd)
 
@@ -416,6 +420,9 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
     records1["basisOfRecord"] = "HUMAN_OBSERVATION"
     records1["GBIF_download_doi"] = "bypassed"
     records1["occurrenceStatus"] = "PRESENT"
+    records1 = (records1
+                .fillna({"effort_distance_m": 0, "gps_accuracy_m": 10})
+                .replace({"individualCount": {"X": 1}}))
 
     # Add EBD records to a template dataframe
     schema_df = pd.DataFrame(columns=list(output_schema.keys()))
@@ -691,15 +698,18 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
     records2 = (pd.DataFrame(columns=output_schema.keys())
                 .combine_first(records1)
                 .replace({"coordinateUncertaintyInMeters": {"UNKNOWN": np.nan},
-                               "radius_meters": {"UNKNOWN": np.nan},
+                               "radius_m": {"UNKNOWN": np.nan},
                                "individualCount": {"UNKNOWN": 1},
                                "weight": {"UNKOWN": 10},
                                "detection_distance_m": {"UNKNOWN": 0}})
-                .fillna({"coordinateUncertaintyInMeters": np.nan,
-                         "radius_meters": 0,
+                .fillna({"coordinateUncertaintyInMeters": 0,
+                         "radius_m": 0,
                          "individualCount": 1,
                          "weight": 10,
-                         "detection_distance_m": 0})
+                         "detection_distance_m": 0,
+                         "effort_distance_m": 0,
+                         "coordinate_precision": 1,
+                         "gps_accuracy_m": 30})
                 .astype(output_schema))
     print("Prepared GBIF records for processing: " + str(datetime.now() - timestamp))
 
@@ -729,6 +739,8 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
     import pandas as pd
     from datetime import datetime
     import fnmatch
+    import numpy as np
+    from datetime import datetime
     timestamp = datetime.now()
 
     # Create or connect to the database
@@ -767,13 +779,14 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
                         'coordinateUncertaintyInMeters', 'detection_distance_m',
                         'eventDate', 'eventRemarks', 'filter_set_name',
                         'footprintSRS', 'footprintWKT', 'gbif_id', 'ebird_id',
-                        'general_remarks', 'georeferencedBy', 'habitat',
-                        'georeferenceRemarks', 'identificationQualifier',
+                        "effort_distance_m", 'general_remarks', 'georeferencedBy',
+                        'habitat', 'georeferenceRemarks', 'identificationQualifier',
                         'identifiedBy', 'identifiedRemarks', 'individualCount',
                         'informationWitheld', 'locality', 'locationAccordingTo',
                         'locationRemarks', "modified", 'occurrenceRemarks',
-                        'radius_meters', 'record_id', 'recordedBy', 'retrieval_date',
-                        'taxonConceptID', 'verbatimLocality', 'weight', 'weight_notes']
+                        'radius_m', 'record_id', 'recordedBy', 'retrieval_date',
+                        'taxonConceptID', 'verbatimLocality', 'weight',
+                        'weight_notes']
 
     # Make a function to do the summarizing
     def summarize_values(dataframe, step):
@@ -815,48 +828,111 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
     df_unfiltered["ebird_id"] = taxon_info["EBIRD_ID"]
     df_unfiltered["detection_distance_m"] = taxon_info["detection_distance_m"]
 
-    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< GEOREFERENCE
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  COORDINATE PRECISION
+    df_unfiltered.to_csv("T:/Temp/dev_acc_prec.csv", index=False)
+
+    '''In WGS84, coordinate precision is limited by longitude and varies across
+    latitudes and number of digits provided.  Thus, coordinates have a nominal
+    precision that may limit values.   Populate a column for this...'''
+
+    # Trim decimal length to 5 digits (lat and long).  Anything more is false precision.
+    df_unfiltered["decimalLatitude"] = df_unfiltered["decimalLatitude"].apply(lambda x: x[:8])
+    df_unfiltered["decimalLongitude"] = df_unfiltered["decimalLongitude"].apply(lambda x: x[:9])
+
+    # Calculate the number of digits for latitude and longitude
+    df_unfiltered['digits_latitude'] = [len(x.split(".")[1]) for x in df_unfiltered['decimalLatitude']]
+    df_unfiltered['digits_longitude'] = [len(x.split(".")[1]) for x in df_unfiltered['decimalLongitude']]
+
+    # Calculate nominal precisions (meters)
+    # Longitude precision
+    digitsX = {1: 10, 2: 100, 3: 1000, 4: 10000, 5: 100000}
+    df_unfiltered["temp"] = df_unfiltered["decimalLatitude"].apply(lambda x: (111321 * np.cos(float(x) * np.pi/180)))
+    df_unfiltered["temp2"] = df_unfiltered["digits_longitude"].apply(lambda x: digitsX[x])
+    df_unfiltered["nominal_x_precision"] = df_unfiltered["temp"]/df_unfiltered["temp2"]# decimal moved based on digits.
+    # Latitude precision
+    digitsY = {1: 11112.0, 2: 1111.2, 3: 111.1, 4: 11.1, 5: 1.1} # Lookup for latitude precision
+    df_unfiltered["nominal_y_precision"] = df_unfiltered["digits_latitude"].apply(lambda x: digitsY[x])
+
+    # Put the larger of the two nominal precisions in a column
+    df_unfiltered["nominal_xy_precision"] = np.where(df_unfiltered["nominal_y_precision"] > df_unfiltered["nominal_x_precision"], df_unfiltered["nominal_y_precision"], df_unfiltered["nominal_x_precision"])
+
+    # Clean up
+    df_unfiltered.drop(["temp", "temp2", "digits_latitude", "digits_longitude", "nominal_x_precision", "nominal_y_precision"], axis=1, inplace=True)
+
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< BUFFER RADIUS
     '''
-    The point-radius method is used.  If footprintWKT is provided, it will be
-        used instead by generate_shapefile.  Components of uncertainty are
-        1) coordinate precision, 2) gps accuracy, 3) detection distance,
-        4) feature extent/geographic radial.
+    Calculate a buffer distance from various parameters for the
+    point-radius method.  Compilation has to differ with data source and
+    whether the user chose to use a default coordinate uncertainty.  Components
+    of radius may include coordinateUncertaintyInMeters, coordinatePrecision,
+    GPS_accuracy_m, effort_distance_m, detection_distance_m.
+
+    Records are broken apart by source (GBIF, GBIF/EOD, EBD), processed,
+    and then concatenated in order to account for all conditions.
+
+    If footprintWKT is provided, it will be used by generate_shapefile instead
+    of point buffering.
     '''
-    # Where null, use coordinates to get precision                                 how to do this more exhaustively?
-    coordinate_precision = 1.11
-    df_unfiltered.fillna(value={'coordinatePrecision':coordinate_precision}, inplace=True)
+    # Records from GBIF with coordinate uncertainty (georeferenced)
+    georef = df_unfiltered[df_unfiltered["coordinateUncertaintyInMeters"] > 0.0].copy()
+    if georef.empty == False:
+        georef.fillna({"coordinatePrecision":1.1}, inplace=True)
+        georef["gps_accuracy_m"] = np.where(georef["eventDate"].apply(lambda x: datetime.strptime(x, "%Y-%m-%dT%H:%M:%S").year) < 2000, 100, 30)
+        georef["radius_m"] = georef["coordinateUncertaintyInMeters"]
+        print("Number of georeferenced GBIF records: " + str(len(georef)))
 
-    # Split records into two data frames based on whether they're georeferenced
-    georef = df_unfiltered[df_unfiltered["coordinateUncertaintyInMeters"].isnull() == False].copy()
-    not_georef = df_unfiltered[df_unfiltered["coordinateUncertaintyInMeters"].isnull() == True].copy()
-    print("Number of georeferenced records: " + str(len(georef)))
-    print("Number of record without georeference: " + str(len(not_georef)))
+    # Records from GBIF without coordinate uncertainty
+    gbif_nogeo = df_unfiltered[(df_unfiltered["coordinateUncertaintyInMeters"] == 0.0) & (df_unfiltered["collectionCode"].str.contains("EBIRD*") == False)].copy()
+    if gbif_nogeo.empty == False:
+        gbif_nogeo["gps_accuracy_m"] = np.where(gbif_nogeo["eventDate"].apply(lambda x: datetime.strptime(x, "%Y-%m-%dT%H:%M:%S").year) < 2000, 100, 30)
+        if filter_set["default_coordUncertainty"] is not None:
+            print("Applying default coordinate uncertainties for GBIF records")
+            gbif_nogeo.fillna({"coordinatePrecision":1.1}, inplace=True)
+            gbif_nogeo["radius_m"] = filter_set["default_coordUncertainty"]
 
-    # If records are not georeferenced, approximate                               should only habppen to unreferenced records
-    if filter_set["default_coordUncertainty"] is not None:
-        print("Applying default coordinate uncertainties")
-        not_georef["coordinateUncertaintyInMeters"] = filter_set["default_coordUncertainty"]
+        if filter_set["default_coordUncertainty"] is None:
+            print("Approximating coordinate uncertanties for GBIF records")
+            gbif_nogeo.fillna({"coordinatePrecision":1.1}, inplace=True)
+            gbif_nogeo["radius_m"] = gbif_nogeo["gps_accuracy_m"] + gbif_nogeo["detection_distance_m"] + gbif_nogeo["effort_distance_m"]
 
-    if filter_set["default_coordUncertainty"] is None:
-        print("Approximating coordinate uncertanties")
-        gps_accuracy = 30 # 100 if before 2000
-        feature_length = 0
-        not_georef["coordinateUncertaintyInMeters"] = not_georef["coordinatePrecision"] + gps_accuracy + feature_length
+    # Records from EBD
+    ebd_geo = df_unfiltered[df_unfiltered["source"] == "eBird"].copy()
+    if ebd_geo.empty == False:
+        ebd_geo.fillna({"coordinatePrecision":1.1}, inplace=True)
+        ebd_geo["gps_accuracy_m"] = np.where(ebd_geo["eventDate"].apply(lambda x: datetime.strptime(x, "%Y-%m-%d").year) < 2000, 100, 30)
+        ebd_geo["radius_m"] = ebd_geo["effort_distance_m"] + ebd_geo["gps_accuracy_m"] + ebd_geo["detection_distance_m"]
 
-    # Calculate radii in each case
-    not_georef["radius_meters"] = not_georef["coordinateUncertaintyInMeters"] + not_georef["detection_distance_m"]
-    georef["radius_meters"] = georef["coordinateUncertaintyInMeters"]
+    # Records from EOD (via GBIF)
+    eod_nogeo = df_unfiltered[(df_unfiltered["source"] == "GBIF") & (df_unfiltered["collectionCode"].str.contains("EBIRD*") == True)].copy()
+    if eod_nogeo.empty == False:
+        eod_nogeo.fillna({"coordinatePrecision":1.1}, inplace=True)
+        eod_nogeo["gps_accuracy_m"] = np.where(eod_nogeo["eventDate"].apply(lambda x: datetime.strptime(x, "%Y-%m-%dT%H:%M:%S").year) < 2000, 100, 30)
+        eod_nogeo["effort_distance_m"] = 8047 # eBird best practices allows distance up to 5 mi length.
+        eod_nogeo["radius_m"] = eod_nogeo["effort_distance_m"] + eod_nogeo["gps_accuracy_m"] + eod_nogeo["detection_distance_m"]
 
-    # Concat df's if necessary and then calculate radius_meters
-    if not_georef.empty == True or filter_set['has_coordinate_uncertainty'] == True:
+    # Concat df's if necessary
+    if filter_set['has_coordinate_uncertainty'] == True:
         df_unfiltered2 = georef
-    else:
-        df_unfiltered2 = pd.concat([georef, not_georef])
 
+    to_concat = []
+    for x in [gbif_nogeo, georef, eod_nogeo, ebd_geo]:
+        if x.empty == False:
+            to_concat.append(x)
+
+    if len(to_concat) > 1:
+        df_unfiltered2 = pd.concat(to_concat)
+    if len(to_concat) == 1:
+        df_unfiltered2 = to_concat[0]
+
+    # Where coordinate precision is poor, overwrite the radius to be the precision.
+    df_unfiltered2["radius_m"] = np.where(df_unfiltered2["nominal_xy_precision"] > df_unfiltered2["radius_m"], df_unfiltered2["nominal_xy_precision"], df_unfiltered2["radius_m"])
+    df_unfiltered2["radius_m"] = np.where(df_unfiltered2["coordinatePrecision"] > df_unfiltered2["radius_m"], df_unfiltered2["coordinatePrecision"], df_unfiltered2["radius_m"])
+
+    # Test to make sure that no records were lost in the previous steps
     if len(df_unfiltered2) != len(df_unfiltered):
         print("AN ERROR OCCURRED !!!!!!!!!!!!!")
     else:
-        print("Prepared and georeferenced records:" + str(datetime.now() - timestamp))
+        print("Prepared records and calculated radii:" + str(datetime.now() - timestamp))
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  FILTER
     timestamp = datetime.now()
@@ -866,7 +942,7 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
         if filter_set[x] == None:
             filter_set[x] = []
 
-    df_filter2 = (df_unfiltered2[df_unfiltered2['coordinateUncertaintyInMeters'] <= filter_set['max_coordinate_uncertainty']]
+    df_filter2 = (df_unfiltered2[df_unfiltered2['radius_m'] <= filter_set['max_coordinate_uncertainty']]
                 [lambda x: x['collectionCode'].isin(filter_set['collection_codes_omit']) == False]
                 [lambda x: x['institutionID'].isin(filter_set['institutions_omit']) == False]
                 [lambda x: x['basisOfRecord'].isin(filter_set['bases_omit']) == False]
@@ -874,6 +950,10 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
                 [lambda x: x['datasetName'].isin(filter_set['datasets_omit']) == False]
                 [lambda x: x['occurrenceStatus'] != "ABSENT"]
                 )
+
+    # Case where user demands records had coordinate uncertainty
+    if filter_set['has_coordinate_uncertainty'] == True:
+        df_filter2 = df_filter2[df_filter2["coordinateUncertaintyInMeters"] > 0]
 
     ''' ISSUES are more complex because multiple issues can be listed per record
     Method used is complex, but hopefully faster than simple iteration over all records
@@ -893,7 +973,6 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
     df_filter3 = (df_filter3
                   .astype({'decimalLatitude': 'str', 'decimalLongitude': 'str'})
                   .reset_index(drop=True))
-
     if filter_set["duplicates_OK"] == False:
         df_filterZ = drop_duplicates_latlongdate(df_filter3)
 
@@ -947,6 +1026,46 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
     conn.close()
     return None
 
+def nominal_precisions(longitude, latitude, produce):
+    '''
+    Calculates the nominal precisions based on an WGS84 coordinates.
+    Method is based on information from wikipedia page on latitude and posts
+    at https://gis.stackexchange.com/questions/8650/measuring-accuracy-of-latitude-and-longitude
+    https://wiki.openstreetmap.org/wiki/Precision_of_coordinates
+
+    PARAMETERS
+    ----------
+    latitude : decimal degrees (EPSG:4326) latitude as string.
+    longitude : decimal degrees (EPSG:4326) longitude as string.
+    produce : 'longitude', 'latitude', or 'both'
+
+    RETURNS
+    -------
+    x : uncertainty in longitude (meters) as float.
+    y : uncertianty in latitude (meters) as float.
+
+    EXAMPLE
+    -------
+    x, y = nominal_precisions("-93.455", "26.3455", produce="both")
+    '''
+    lat = latitude.split(".")
+    long = longitude.split(".")
+
+    # Longitude
+    digitsX = {2: 100, 3: 1000, 4: 10000, 5: 100000}
+    x =(111321 * np.cos(float(latitude) * np.pi/180))/digitsX[len(long[1])] # decimal gets moved based on digits.
+
+    # Latitude
+    digitsY = {2: 1111.2, 3: 111.1, 4: 11.1, 5: 1.1} # Lookup for latitude precision
+    y = digitsY[len(lat[1])]
+
+    if produce == "both":
+        return x, y
+    if produce == "longitude":
+        return x
+    if produce == "latitude":
+        return y
+
 def drop_duplicates_latlongdate(df):
     '''
     Function to find and remove duplicate occurrence records within the
@@ -997,7 +1116,7 @@ def drop_duplicates_latlongdate(df):
     First, trim decimal length in cases where decimal length differs between
     latitude and longitude values, result is equal latitude and longitude
     length.  Record the trimmed decimal precision in a temp column for use later
-    as a record to "native" precision.
+    as a record to "verbatim" precision.
     """
     df['dup_latPlaces'] = [len(x.split(".")[1]) for x in df['decimalLatitude']]
     df['dup_lonPlaces'] = [len(x.split(".")[1]) for x in df['decimalLongitude']]
@@ -1021,17 +1140,17 @@ def drop_duplicates_latlongdate(df):
     keeping the first (highest individual count)
     Sort so that the highest individual count is first ## ADD OCCURRENCEDATE BACK IN
     """
-    df.sort_values(by=['decimalLatitude', 'decimalLongitude', 'eventDate',
-                        'individualCount'],
-                    ascending=False, inplace=True, kind='mergesort',
-                    na_position='last')
-
-    df.drop_duplicates(subset=['decimalLatitude', 'decimalLongitude', 'eventDate'],
-                       keep='first', inplace=True)
+    df = (df
+          .sort_values(by=['decimalLatitude', 'decimalLongitude', 'eventDate',
+                           'individualCount'],
+                       ascending=False, kind='mergesort', na_position='last')
+          .drop_duplicates(subset=['decimalLatitude', 'decimalLongitude',
+                                   'eventDate'],
+                           keep='first'))
 
     """
     #########  FIND IMPRECISE DUPLICATES
-    Get a list of "native" precisions that are present in the data to loop through.
+    Get a list of "verbatim" precisions that are present in the data to loop through.
     Next, iterate through this list collecting id's of records that need to be
     removed from the main df.
     """
@@ -1189,7 +1308,7 @@ def generate_shapefile(database, output_file, footprints=True):
                            con=sqlite3.connect(database))
                           .astype({'decimalLongitude': 'float',
                                    'decimalLatitude': 'float',
-                                   'radius_meters': 'float'}))
+                                   'radius_m': 'float'}))
 
     # Make a point geometry from coordinates
     gdf = gpd.GeoDataFrame(records,
@@ -1209,7 +1328,7 @@ def generate_shapefile(database, output_file, footprints=True):
         footprints = gdf.to_crs(epsg=5070)
 
         # Point-radius method
-        footprints['footprint']=footprints.apply(lambda x: x.geometry.buffer(x.radius_meters), axis=1)
+        footprints['footprint']=footprints.apply(lambda x: x.geometry.buffer(x.radius_m), axis=1)
         footprints.set_geometry(col='footprint', inplace=True, drop=True)
 
         # Shape method
@@ -1365,7 +1484,7 @@ def verify_results(database):
     records2 = (pd.read_sql("""SELECT * FROM occurrence_records;""", con=conn)
                 .astype({'decimalLongitude': 'float',
                          'decimalLatitude': 'float',
-                         'radius_meters': 'float'}))
+                         'radius_m': 'float'}))
 
     # Make a point geometry from coordinates
     gdf = gpd.GeoDataFrame(records2,

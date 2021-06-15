@@ -53,7 +53,7 @@ This framework has certain features that support transparency and build confiden
   * _Basis of record and sampling protocols_ -- Data sets accessed through GBIF include a variety of types of records, such as preserved specimens and fossil records.  Additionally, different sampling protocols may have been employed.  The user can choose which types to filter out.
 
 
-## Recent changes (May 1, 2021)
+## Recent changes (June 22, 2021)
 * Made species level geometry filtering optional if polygon is present in taxon concept dictionary.
 * Included citations, rights, download key, and download doi for GBIF downloads.
 * Increased the number of attributes retained for GBIF records.
@@ -61,11 +61,11 @@ This framework has certain features that support transparency and build confiden
 * Abandonment of Spatialite in favor of the Python Geopandas package for spatial processes.  
 * All software requirements can now be satisfied with conda. There is no need to suffer through Spatialite installation.
 * Revised Jupyter Notebook document for designing and running queries.
+* More sophisticated logic for interpreting and approximating the geographic locations of records in accordance with Chapman and Wieczorek (2020).
 
 ## Coming soon
-* More sophisticated logic for interpreting and approximating the geographic locations of records in accordance with Chapman and Wieczorek (2020).
+* Ability to interpret the shape georeference methods by using the Darwin Core attribute "footprintWKT"
 * Incorporating tools for navigating taxa concept matching and assessment.
-* Helper function to combine two output databases.
 * Helper function to extract a random point from within each occurrence records' geographic boundaries.
 
 ## Inputs
