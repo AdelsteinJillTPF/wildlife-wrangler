@@ -836,19 +836,21 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
     precision that may limit values.   Populate a column for this...'''
 
     # Trim decimal length to 5 digits (lat and long).  Anything more is false precision.
-    df_unfiltered["decimalLatitude"] = df_unfiltered["decimalLatitude"].apply(lambda x: x[:8])
-    df_unfiltered["decimalLongitude"] = df_unfiltered["decimalLongitude"].apply(lambda x: x[:9])
+    df_unfiltered["decimalLatitude"] = df_unfiltered["decimalLatitude"].apply(lambda x: x.split(".")[0] + "." + x.split(".")[1][:5])
+    df_unfiltered["decimalLongitude"] = df_unfiltered["decimalLongitude"].apply(lambda x: x.split(".")[0] + "." + x.split(".")[1][:5])
 
     # Calculate the number of digits for latitude and longitude
     df_unfiltered['digits_latitude'] = [len(x.split(".")[1]) for x in df_unfiltered['decimalLatitude']]
     df_unfiltered['digits_longitude'] = [len(x.split(".")[1]) for x in df_unfiltered['decimalLongitude']]
 
     # Calculate nominal precisions (meters)
+    '''digitsX = {1: 10, 2: 100, 3: 1000, 4: 10000, 5: 100000}
+    x =(111321 * np.cos(float(latitude) * np.pi/180))/digitsX[len(long[1])] # decimal gets moved based on digits.'''
     # Longitude precision
     digitsX = {1: 10, 2: 100, 3: 1000, 4: 10000, 5: 100000}
-    df_unfiltered["temp"] = df_unfiltered["decimalLatitude"].apply(lambda x: (111321 * np.cos(float(x) * np.pi/180)))
+    df_unfiltered["temp"] = df_unfiltered["decimalLatitude"].apply(lambda x: 111321 * np.cos(float(x) * np.pi/180))
     df_unfiltered["temp2"] = df_unfiltered["digits_longitude"].apply(lambda x: digitsX[x])
-    df_unfiltered["nominal_x_precision"] = df_unfiltered["temp"]/df_unfiltered["temp2"]# decimal moved based on digits.
+    df_unfiltered["nominal_x_precision"] = 100 * df_unfiltered["temp"]/df_unfiltered["temp2"]# decimal moved based on digits.
     # Latitude precision
     digitsY = {1: 11112.0, 2: 1111.2, 3: 111.1, 4: 11.1, 5: 1.1} # Lookup for latitude precision
     df_unfiltered["nominal_y_precision"] = df_unfiltered["digits_latitude"].apply(lambda x: digitsY[x])
@@ -857,6 +859,8 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
     df_unfiltered["nominal_xy_precision"] = np.where(df_unfiltered["nominal_y_precision"] > df_unfiltered["nominal_x_precision"], df_unfiltered["nominal_y_precision"], df_unfiltered["nominal_x_precision"])
 
     # Clean up
+    temp = df_unfiltered[["nominal_xy_precision", "decimalLatitude", "digits_latitude", "decimalLongitude", "digits_longitude", "nominal_x_precision", "nominal_y_precision"]]
+    print(temp[temp["decimalLongitude"] == "-103.930"].T)
     df_unfiltered.drop(["temp", "temp2", "digits_latitude", "digits_longitude", "nominal_x_precision", "nominal_y_precision"], axis=1, inplace=True)
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< BUFFER RADIUS
@@ -1048,15 +1052,17 @@ def nominal_precisions(longitude, latitude, produce):
     -------
     x, y = nominal_precisions("-93.455", "26.3455", produce="both")
     '''
+    import numpy as np
+
     lat = latitude.split(".")
     long = longitude.split(".")
 
     # Longitude
-    digitsX = {2: 100, 3: 1000, 4: 10000, 5: 100000}
+    digitsX = {1: 10, 2: 100, 3: 1000, 4: 10000, 5: 100000}
     x =(111321 * np.cos(float(latitude) * np.pi/180))/digitsX[len(long[1])] # decimal gets moved based on digits.
 
     # Latitude
-    digitsY = {2: 1111.2, 3: 111.1, 4: 11.1, 5: 1.1} # Lookup for latitude precision
+    digitsY = {1: 11112.0, 2: 1111.2, 3: 111.1, 4: 11.1, 5: 1.1} # Lookup for latitude precision
     y = digitsY[len(lat[1])]
 
     if produce == "both":

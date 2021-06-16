@@ -22,18 +22,11 @@ The user begins by creating a copy of the __report_TEMPLATE.ipynb__, which they 
 *  __wrangler_functions.py__ -- a python module containing the core functions of the wrangler.  DO NOT CHANGE THIS!  Much of the necessary code is kept here to avoid having a thousand lines of code in the report.ipynb.  You can call some helper functions from this by importing the module in ipython (i.e., "import wrangler_functions as wranglers").  That can be handy for using the "get_GBIF_code" and "generate_shapefile" functions.
 
 #### Important Processes
-* __Removing Duplicate Records__ -- Queries commonly include duplicates based on the latitude, longitude, and date fields.  The user can opt to keep or exclude duplicates.  If they choose to exclude them, a multi-step process is triggered to account for two major issues.  One, the values of latitude and longitude for a record may have different numbers of digits to the right of the decimal (i.e., latitude has eight decimals but longitude has six).  Two, not all records have the same number of digits to the right of the decimal for latitude and longitude (i.e., one record may have two for latitude and longitude while another has 12).  The process used is as follows:
-  1. Latitude and longitude values of each record are truncated to the shorter of the two in cases where they differ.
-  2. If duplicates occur after that step, then the one with the largest individual count is kept, or the sorted first record if individual counts are the same.
-  3. Records are identified that are a duplicate of a record with higher precision (e.g. (10.123, -10.123) would be flagged as a duplicate of (10.1234, -10.1234)).
-  4. Duplicates are again removed.
-
-
-* __Incorporating Locational Uncertainty__ -- Species occurrence records represent events that occurred at specific locations, and thus, they have spatial extents and positions.  The geographical boundaries of observation events are defined by the observation method used and/or the observer’s behavior.  For spatial analyses and summaries, records must be assigned to geographic extents, and that process is referred to as georeferencing.  The geographic extents of observation events vary in size and shape and are rarely precisely mapped.  Usually, they must be approximated with information that has been associated with a record, such as spatial coordinates and text describing a location (Chapman and Wieczorek 2020).  
+__Incorporating Locational Uncertainty__ -- Species occurrence records represent events that occurred at specific locations, and thus, they have spatial extents and positions.  The geographical boundaries of observation events are defined by the observation method used and/or the observer’s behavior.  For spatial analyses and summaries, records must be assigned to geographic extents, and that process is referred to as georeferencing.  The geographic extents of observation events vary in size and shape and are rarely precisely mapped.  Usually, they must be approximated with information that has been associated with a record, such as spatial coordinates and text describing a location (Chapman and Wieczorek 2020).  
 
   Given that the geographic boundaries of many occurrence records in GBIF and eBird are not precisely mapped, we have to identify strategies for approximating them, as well as the sources of uncertainty.  In Chapman and Wieczorek’s (2020) description of best practices for georeferencing, they identify methods for georeferencing and the components of geographical uncertainties regarding the locations of observations.  The Wildlife Wrangler employs logic and methods that are meant to match the terminology, concepts, and methods presented by Chapman and Wieczorek (2020) to the best extent possible, with the goal of identifying or approximating a spatial representation of a record's entire location, including all uncertainties involved.  
 
-  Chapman and Wieczorek (2020) identify several key components for georeferencing that are addressed by the Wildlife Wrangler.
+Chapman and Wieczorek (2020) identify several key components for georeferencing that are addressed by the Wildlife Wrangler.
 
   * Georeferencing method -- Records are most commonly georeferenced by identifying a buffer radius length that, when applied to a record's coordinates, includes the entirety of the spatial extent of the event ("point-radius method").  However, the spatial extents of events are sometimes georeferenced as polygons instead ("shape method"), and such polygons can be stored in the Darwin Core "footprintWKT" field.  
   * Coordinate precision -- The Darwin Core schema includes a field for this named "coordinatePrecision", but it is rarely provided for many species.  However, the limits in precision of a pair of geographic coordinates can be calculated based upon the number of digits right of the decimal and their position on the WGS84 datum.  That precision may not agree with reported "coordinatePrecision" or "coordinateUncertaintyInMeters".  The Wildlife Wrangler calculates the best possible precision for a given set of coordinates and stores it in a field named "nominal_xy_precision".  Missing values in "coordinatePrecision" are replaced with 1.1 m.
@@ -43,7 +36,7 @@ The user begins by creating a copy of the __report_TEMPLATE.ipynb__, which they 
   * Coordinate uncertainty -- For the point-radius method, the appropriate buffer radius for a record is stored in the Darwin Core field named "coordinateUncertaintyInMeters".  A well-georeferenced record would have a coordinate uncertainty value that encompasses all of the previously listed components.  In reality, this field is often empty and the user is left to approximate or estimate a value.  The user can opt to provide a standard, default coordinate uncertainty value to use when "coordinateUncertaintyInMeters" is empty.
 
 
-  The following processes are relevant to incorporating and accounting for uncertainties in the locations of recorded individuals.  
+The following processes are relevant to incorporating and accounting for uncertainties in the locations of recorded individuals.  
 
   1. Decimal degrees values are truncated to five or fewer digits because few GPS devices have precision that truly exceeds that.
   2. When "footprintWKT" is provided, the shape method is used and the record is mapped with the polygon that it delineates. Otherwise, the point-radius method is used.
@@ -59,8 +52,13 @@ The user begins by creating a copy of the __report_TEMPLATE.ipynb__, which they 
 
   4. When the nominal coordinate precision is larger than the approximated buffer radius, the radius is replaced with the precision.  When "coordinatePrecision" is greater than both of those values, it is used instead.   
 
-  In summary, mapping occurrence records involves approximating non-point geometries, and the relevant information is often not provided.  However, the Wildlife Wrangler enables a user to customize approximations in broad strokes that are explicitly documented.  Choices in filter and taxon concept parameters determine how records will be mapped.
+In summary, mapping occurrence records involves approximating non-point geometries, and the relevant information is often not provided.  However, the Wildlife Wrangler enables a user to customize approximations in broad strokes that are explicitly documented.  Choices in filter and taxon concept parameters determine how records will be mapped.  Approximations of locational uncertatinty can be fine tuned by adjusting relevant columns for individual records in the output .sqlite database. 
 
+__Removing Duplicate Records__ -- Queries commonly include duplicates based on the latitude, longitude, and date fields.  The user can opt to keep or exclude duplicates.  If they choose to exclude them, a multi-step process is triggered to account for two major issues.  One, the values of latitude and longitude for a record may have different numbers of digits to the right of the decimal (i.e., latitude has eight decimals but longitude has six).  Two, not all records have the same number of digits to the right of the decimal for latitude and longitude (i.e., one record may have two for latitude and longitude while another has 12).  The process used is as follows:
+  1. Latitude and longitude values of each record are truncated to the shorter of the two in cases where they differ.
+  2. If duplicates occur after that step, then the one with the largest individual count is kept, or the sorted first record if individual counts are the same.
+  3. Records are identified that are a duplicate of a record with higher precision (e.g. (10.123, -10.123) would be flagged as a duplicate of (10.1234, -10.1234)).
+  4. Duplicates are again removed.
 
 #### Detailed Instructions
 1.  Copy "__report_TEMPLATE.ipynb__" to a location outside of the wrangler repo, say to your project directory.  Rename the notebook document to whatever you like.
