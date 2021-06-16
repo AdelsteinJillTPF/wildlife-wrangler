@@ -43,11 +43,14 @@ output_schema = {"GBIF_download_doi": "str",
                  "nominal_xy_precision": "float",
                  "occurrenceRemarks": "str",
                  "occurrenceStatus": "str",
+                 "organismQuantity": "str",
+                 "organismQuantityType": "str",
                  "radius_m": "float",
                  "record_id": "str",
                  "recordedBy": "str",
                  "retrieval_date": "str",
                  "samplingProtocol": "str",
+                 "samplingEffort": "str",
                  "scientificName": "str",
                  "source": "str",
                  "taxonConceptID": "str",
@@ -827,6 +830,7 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
     df_unfiltered["gbif_id"] = taxon_info["GBIF_ID"]
     df_unfiltered["ebird_id"] = taxon_info["EBIRD_ID"]
     df_unfiltered["detection_distance_m"] = taxon_info["detection_distance_m"]
+    df_unfiltered["filter_set_name"] = filter_set["name"]
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  COORDINATE PRECISION
     df_unfiltered.to_csv("T:/Temp/dev_acc_prec.csv", index=False)
@@ -859,8 +863,6 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
     df_unfiltered["nominal_xy_precision"] = np.where(df_unfiltered["nominal_y_precision"] > df_unfiltered["nominal_x_precision"], df_unfiltered["nominal_y_precision"], df_unfiltered["nominal_x_precision"])
 
     # Clean up
-    temp = df_unfiltered[["nominal_xy_precision", "decimalLatitude", "digits_latitude", "decimalLongitude", "digits_longitude", "nominal_x_precision", "nominal_y_precision"]]
-    print(temp[temp["decimalLongitude"] == "-103.930"].T)
     df_unfiltered.drop(["temp", "temp2", "digits_latitude", "digits_longitude", "nominal_x_precision", "nominal_y_precision"], axis=1, inplace=True)
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< BUFFER RADIUS
@@ -1289,19 +1291,24 @@ def ccw_wkt_from_shapefile(shapefile, out_txt):
         print("You need to reproject the shapefile to EPSG:4326")
     return
 
-def generate_shapefile(database, output_file, footprints=True):
+def spatial_output(database, make_file, mode, output_file):
     '''
-    Exports a shapefile of species occurrence records from a wildlife wrangler
+    Creates a shapefile of species occurrence records from a wildlife wrangler
         output SQLite database.
 
     PARAMETERS
+    ----------
     database : the sqlite database to use.
+    make_file : whether to save a shapefile.  False just returns a geodatframe.
+    mode : three options: 1) "points" merely creates points from record coordinates.
+        2) "footprints" uses the point-radius and shape methods to map polygons.
+        3) "random" creates the footprints and then picks a random point within
+        each footprint polygon.
     output_file : Path (and name) of the file to be created.
-    footprints : True creates a map of record footprints (buffered coordinates),
-        whereas False returns records as points base on coordinates provided.
 
     OUTPUT
-    shapefile saved to disk
+    ------
+    geopandas data frame and a shapefile saved to disk
     '''
     from datetime import datetime
     import sqlite3
@@ -1314,7 +1321,7 @@ def generate_shapefile(database, output_file, footprints=True):
                            con=sqlite3.connect(database))
                           .astype({'decimalLongitude': 'float',
                                    'decimalLatitude': 'float',
-                                   'radius_m': 'float'}))
+                                   'radius_meters': 'float'}))
 
     # Make a point geometry from coordinates
     gdf = gpd.GeoDataFrame(records,
@@ -1324,26 +1331,42 @@ def generate_shapefile(database, output_file, footprints=True):
     # Set the coordinate reference system
     gdf.crs={'init' :'epsg:4326'}
 
-    # Save points OR
-    if footprints == False:
-        gdf.to_file(outFile)
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  POINTS
+    # If user just wants shapefile of given coordinates (point method)
+    if mode == "points":
+        if make_file == True:
+            # Simply save points
+            gdf.to_file(outFile)
 
-    # Save polygons (footprints)
-    if footprints == True:
-        # Reproject states and record coordinates to facilitate buffering
-        footprints = gdf.to_crs(epsg=5070)
+        out = gdf
 
-        # Point-radius method
-        footprints['footprint']=footprints.apply(lambda x: x.geometry.buffer(x.radius_m), axis=1)
-        footprints.set_geometry(col='footprint', inplace=True, drop=True)
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  FOOTPRINTS
+    # If the user wants to identify record footprints (point-radius or shape method)
+    if mode == "footprints":
+        # Reproject record coordinates to facilitate buffering
+        feetprints = gdf.to_crs(epsg=5070)
 
-        # Shape method
+        # Use point-radius method
+        feetprints['footprint'] = feetprints.apply(lambda x: x.geometry.buffer(x.radius_meters), axis=1)
+        feetprints.set_geometry(col='footprint', inplace=True, drop=True)
 
+        # Overwrite when footprint WKT is provided (shape method; careful with projection) FORTHCOMING
+        if list(gdf['footprintWKT'].unique()) != ['nan']:
+            print("ALERT! footprintWKT was provided but not used.")
 
-        footprints.to_file(outFile)
+        if make_file == True:
+            # Save results as shapefile
+            feetprints.to_file(outFile)
+
+        out = feetprints
+
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  RANDOM POINTS
+    # If the user wants a random point selected from within each footprint
+    if mode == "random":
+        print("Not yet available")
 
     print("Exported shapefile: " + str(datetime.now() - timestamp))
-    return
+    return out
 
 def CONUS_bbox():
     """
