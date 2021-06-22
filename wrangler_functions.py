@@ -1314,14 +1314,16 @@ def spatial_output(database, make_file, mode, output_file):
     import sqlite3
     import pandas as pd
     import geopandas as gpd
+    import random
+    from shapely.geometry import Point
     timestamp = datetime.now()
 
     # Get the record coordinates as a data frame
     records = (pd.read_sql("""SELECT * FROM occurrence_records;""",
                            con=sqlite3.connect(database))
-                          .astype({'decimalLongitude': 'float',
+                           .astype({'decimalLongitude': 'float',
                                    'decimalLatitude': 'float',
-                                   'radius_meters': 'float'}))
+                                   'radius_m': 'float'}))
 
     # Make a point geometry from coordinates
     gdf = gpd.GeoDataFrame(records,
@@ -1336,7 +1338,7 @@ def spatial_output(database, make_file, mode, output_file):
     if mode == "points":
         if make_file == True:
             # Simply save points
-            gdf.to_file(outFile)
+            gdf.to_file(output_file)
 
         out = gdf
 
@@ -1347,7 +1349,7 @@ def spatial_output(database, make_file, mode, output_file):
         feetprints = gdf.to_crs(epsg=5070)
 
         # Use point-radius method
-        feetprints['footprint'] = feetprints.apply(lambda x: x.geometry.buffer(x.radius_meters), axis=1)
+        feetprints['footprint'] = feetprints.apply(lambda x: x.geometry.buffer(x.radius_m), axis=1)
         feetprints.set_geometry(col='footprint', inplace=True, drop=True)
 
         # Overwrite when footprint WKT is provided (shape method; careful with projection) FORTHCOMING
@@ -1356,14 +1358,44 @@ def spatial_output(database, make_file, mode, output_file):
 
         if make_file == True:
             # Save results as shapefile
-            feetprints.to_file(outFile)
+            feetprints.to_file(output_file)
 
         out = feetprints
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  RANDOM POINTS
     # If the user wants a random point selected from within each footprint
     if mode == "random":
-        print("Not yet available")
+        # Reproject record coordinates to facilitate buffering
+        feetprints = gdf.to_crs(epsg=5070)
+
+        # Use point-radius method
+        feetprints['footprint'] = feetprints.apply(lambda x: x.geometry.buffer(x.radius_m), axis=1)
+        feetprints.set_geometry(col='footprint', inplace=True, drop=True)
+
+        # Overwrite when footprint WKT is provided (shape method; careful with projection) FORTHCOMING
+        if list(gdf['footprintWKT'].unique()) != ['nan']:
+            print("ALERT! footprintWKT was provided but not used.")
+
+        # Function to generate random points
+        def generate_random(number, polygon):
+            points = []
+            minx, miny, maxx, maxy = polygon.bounds
+            while len(points) < number:
+                pnt = Point(random.uniform(minx, maxx), random.uniform(miny, maxy))
+                if polygon.contains(pnt):
+                    points.append(pnt)
+            return points
+
+        # Generate random points
+        feetprints["random_points"] = feetprints["geometry"].apply(lambda x: generate_random(1, x)[0])
+        feetprints.drop(["geometry"], axis=1, inplace=True)
+        feetprints.set_geometry(col='random_points', inplace=True, drop=True)
+
+        if make_file == True:
+            # Save results as shapefile
+            feetprints.to_file(output_file)
+
+        out=feetprints
 
     print("Exported shapefile: " + str(datetime.now() - timestamp))
     return out
