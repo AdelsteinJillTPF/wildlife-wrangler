@@ -649,7 +649,7 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
                 wait = datetime.now() - timestamp
                 if wait.seconds > 60*45:
                     gotit = True
-                    print("TIMED OUT -- attempting to proceed anyways")
+                    print("TIMED OUT")
                 else:
                     pass
 

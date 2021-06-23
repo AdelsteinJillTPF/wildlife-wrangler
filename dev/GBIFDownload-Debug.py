@@ -10,8 +10,7 @@ t0 = datetime.now()
 
 downDir = 'T:/Occurrence_Records/downloads/'
 
-sciName = "Hyla arenicolor"
-#sciName = 'Wilsonia citrina'  # Small number of records
+sciName = 'Wilsonia citrina'  # Small number of records
 #sciName = 'Buteo lagopus'  # >200k records
 
 # First use the species module to get the taxonKey for a species scientific name
@@ -30,30 +29,7 @@ res = occ.download(['taxonKey = {0}'.format(tkey), 'hasCoordinate = TRUE', 'coun
 dkey = res[0]
 
 # Now download the actual zip file containing the Darwin Core files
-'''
- NOTE:
-     The download can take a while to generate and is not immediately
-     available once the download_get command has been issued. Use a
-     while and try loop to make sure the download has succeeded.
-     The zipdownload variable will be a dictionary of the path,
-     the file size, and the download key unique code. It can be used
-     to change the file name, unzip the file, etc.
-'''
-
 print("Attempting to download the Darwin Core Archive zip file for this species .....")
-'''###########################################################################################
-gotit = None
-while gotit is None:
-    try:
-        zipdownload = occ.download_get(key=dkey,path=downDir)
-        gotit = 1
-    except:
-        pass
-
-t1 = datetime.now()
-
-print("\n\n+++++ Download time was", t1 - t0, '+++++')
-'''###########################################################################################
 
 success = False
 while success == False:
