@@ -627,28 +627,31 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
         # the file size, and the download key unique code. It can be used
         # to change the file name, unzip the file, etc.
         print("Downloading Darwin Core Archive zip file for this species .....")
-        gotit = None
-        while gotit is None:
+        timestamp = datetime.now()
+        gotit = False
+        while gotit == False:
             try:
                 zipdownload = occurrences.download_get(key=dkey,
                                                        path=working_directory)
-                gotit = 1
+            except:
+                pass
+
+            try:
+                # Read the relevant files from within the darwin core archive
+                with DwCAReader(working_directory + dkey + '.zip') as dwca:
+                    dfRaw = dwca.pd_read('occurrence.txt', low_memory=False)
+                    citations = dwca.open_included_file('citations.txt').read()
+                    rights = dwca.open_included_file('rights.txt').read()
+                    doi = dwca.metadata.attrib["packageId"]
+                    gotit = True
                 print("Download complete: " + str(datetime.now() - timestamp))
             except:
                 wait = datetime.now() - timestamp
                 if wait.seconds > 60*45:
-                    gotit = 0
+                    gotit = True
                     print("TIMED OUT -- attempting to proceed anyways")
                 else:
-                    gotit = None
-
-        # Read the relevant files from within the darwin core archive
-        timestamp = datetime.now()
-        with DwCAReader(working_directory + dkey + '.zip') as dwca:
-            dfRaw = dwca.pd_read('occurrence.txt', low_memory=False)
-            citations = dwca.open_included_file('citations.txt').read()
-            rights = dwca.open_included_file('rights.txt').read()
-            doi = dwca.metadata.attrib["packageId"]
+                    pass
 
         # Record DWCA metadata
         #   Store the value summary for the selected fields in a table.
@@ -833,8 +836,6 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
     df_unfiltered["filter_set_name"] = filter_set["name"]
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  COORDINATE PRECISION
-    df_unfiltered.to_csv("T:/Temp/dev_acc_prec.csv", index=False)
-
     '''In WGS84, coordinate precision is limited by longitude and varies across
     latitudes and number of digits provided.  Thus, coordinates have a nominal
     precision that may limit values.   Populate a column for this...'''
