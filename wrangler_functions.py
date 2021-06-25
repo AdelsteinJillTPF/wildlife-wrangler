@@ -609,15 +609,20 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
         if lonRange  is not None:
             download_filters.append('decimalLongitude >= {0}'.format(lonRange.split(",")[0]))
             download_filters.append('decimalLongitude <= {0}'.format(lonRange.split(",")[1]))
-        print(download_filters)
 
         # Get the value of the download key
-        d = occurrences.download(download_filters,
-                                 pred_type='and',
-                                 user = username,
-                                 pwd = password,
-                                 email = email)
-        dkey = d[0]
+        try:
+            d = occurrences.download(download_filters,
+                                     pred_type='and',
+                                     user = username,
+                                     pwd = password,
+                                     email = email)
+            dkey = d[0]
+        except Exception as e:
+            print(e)
+            print(download_filters)
+
+
 
         # Now download the actual zip file containing the Darwin Core files
         # NOTE: The download can take a while to generate and is not immediately
@@ -703,10 +708,11 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
     # Add GBIF records to template; replace and fillna to support astype()
     records2 = (pd.DataFrame(columns=output_schema.keys())
                 .combine_first(records1)
+                # this replace is needed for API method
                 .replace({"coordinateUncertaintyInMeters": {"UNKNOWN": np.nan},
                                "radius_m": {"UNKNOWN": np.nan},
                                "individualCount": {"UNKNOWN": 1},
-                               "weight": {"UNKOWN": 10},
+                               "weight": {"UNKNOWN": 10},
                                "detection_distance_m": {"UNKNOWN": 0}})
                 .fillna({"coordinateUncertaintyInMeters": 0,
                          "radius_m": 0,
