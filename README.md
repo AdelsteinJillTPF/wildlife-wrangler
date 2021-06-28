@@ -62,11 +62,11 @@ This framework has certain features that support transparency and build confiden
 * All software requirements can now be satisfied with conda. There is no need to suffer through Spatialite installation.
 * Revised Jupyter Notebook document for designing and running queries.
 * More sophisticated logic for interpreting and approximating the geographic locations of records in accordance with Chapman and Wieczorek (2020).
+* Added option to helper function that creates shapefiles from output that enables user to generate a point, record footprint, or extract a random point from within each occurrence records' footprint.
 
 ## Coming soon
 * Ability to interpret the shape georeference methods by using the Darwin Core attribute "footprintWKT"
 * Incorporating tools for navigating taxa concept matching and assessment.
-* Helper function to extract a random point from within each occurrence records' geographic boundaries.
 
 ## Inputs
 Data is gathered from databases via GBIF, and records can be queried from a copy of the EBird Basic Dataset that the user has acquired from eBird.  The user also builds or inputs taxon concepts and filter parameters.
@@ -78,6 +78,7 @@ On a per-species, per-query basis
 
 ## Constraints
 * Currently may only work with Windows 10 operating systems.  
+* Filtering with geometry is not functional due to pygbif bugs.
 * Queries returning > 5,000,000 records may fail.
 * Processing speed is limited in some cases by lack of spatial indexing and slow speed of eBird's Auk R package.
 
