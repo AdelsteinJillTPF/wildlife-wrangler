@@ -53,7 +53,7 @@ This framework has certain features that support transparency and build confiden
   * _Basis of record and sampling protocols_ -- Data sets accessed through GBIF include a variety of types of records, such as preserved specimens and fossil records.  Additionally, different sampling protocols may have been employed.  The user can choose which types to filter out.
 
 
-## Recent changes (June 22, 2021)
+## Recent changes (June 29, 2021)
 * Made species level geometry filtering optional if polygon is present in taxon concept dictionary.
 * Included citations, rights, download key, and download doi for GBIF downloads.
 * Increased the number of attributes retained for GBIF records.

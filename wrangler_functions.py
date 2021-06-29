@@ -396,12 +396,7 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  PREP FOR OUTPUT
     timestamp = datetime.now()
-    ''' DELETE THIS  ?????????????????????????????????                        ?????????????????????????
-    conn = sqlite3.connect(output_database, isolation_level='DEFERRED')
-    cursor = conn.cursor()
-    schema = conn.execute("PRAGMA table_info (occurrence_records);").fetchall()
-    column_names = [x[1] for x in schema]
-    '''
+    
     # Rename columns
     gdf = gdf.rename({'eBird_sp_code': 'ebird_id',
              'global_unique_identifier': 'record_id',
