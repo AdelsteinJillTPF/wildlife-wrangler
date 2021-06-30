@@ -78,9 +78,9 @@ On a per-species, per-query basis
 
 ## Constraints
 * Currently may only work with Windows 10 operating systems.  
-* Filtering with geometry is not functional due to pygbif bugs.
+* Use of geometry parameters with DWCA download function doesn't work with current version of pygbif, but the next version of pygbif will include a bug fix.  In the meantime, rely upon latitude and longitude parameters instead.
 * Queries returning > 5,000,000 records may fail.
-* Processing speed is limited in some cases by lack of spatial indexing and slow speed of eBird's Auk R package.
+* Processing can be slow due to large quantities of records, spatial processing, and/or slow speed of eBird's Auk R package.
 
 ## Dependencies
 Python 3 and numerous packages including sqlite3 with the spatialite extension are needed.  Running the following code in a conda shell should create a suitable environment named "wrangler":
