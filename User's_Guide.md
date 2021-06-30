@@ -2,7 +2,7 @@
 1.  Use [Git](https://git-scm.com/) to clone the master repo from github to your computer.
 2.  Build a [Conda](https://docs.conda.io/projects/conda/en/latest/index.html) environment. Running the following lines of code (individually) in a conda shell should create a suitable environment named "wrangler":
 
-  "conda create -n wrangler python=3.6 ipython rpy2 pandas jupyter notebook numpy shapely matplotlib r-base geopandas descartes"
+    "conda create -n wrangler python=3.7 ipython rpy2 pandas jupyter notebook numpy shapely matplotlib r-base geopandas descartes"
 
     "conda activate wrangler"
 
