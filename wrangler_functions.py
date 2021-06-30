@@ -396,7 +396,7 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  PREP FOR OUTPUT
     timestamp = datetime.now()
-    
+
     # Rename columns
     gdf = gdf.rename({'eBird_sp_code': 'ebird_id',
              'global_unique_identifier': 'record_id',
@@ -595,7 +595,7 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
             download_filters.append('month >= {0}'.format(months.split(",")[0]))
             download_filters.append('month <= {0}'.format(months.split(",")[1]))
         if filter_polygon is not None:
-            download_filters.append("geometry = '{0}'".format(filter_polygon))
+            download_filters.append("geometry = {0}".format(filter_polygon))
         if geoIssue is not None:
             download_filters.append('hasGeospatialIssue = {0}'.format(geoIssue))
         if latRange is not None:

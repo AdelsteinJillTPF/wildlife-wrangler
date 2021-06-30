@@ -1,13 +1,17 @@
 ## Installation for Windows 10
 1.  Use [Git](https://git-scm.com/) to clone the master repo from github to your computer.
 2.  Build a [Conda](https://docs.conda.io/projects/conda/en/latest/index.html) environment. Running the following lines of code (individually) in a conda shell should create a suitable environment named "wrangler":
-    a. "conda create -n wrangler python=3.6 ipython rpy2 pandas jupyter notebook numpy shapely matplotlib r-base geopandas descartes"
-    b. "conda activate wrangler"
-    c. "pip install pygbif python-dwca-reader"
-3.  Copy the __wranglerconfig_TEMPLATE.txt__ file to your     computer and delete "TEMPLATE" from the copied file's name ("__wranglerconfig.txt__").  Fill out this file.  Create a folders named "Input" and "Output" within your designated working directory ("workDir").  Use "/" at the end of paths (i.e. "C:/Data/").
+
+  "conda create -n wrangler python=3.6 ipython rpy2 pandas jupyter notebook numpy shapely matplotlib r-base geopandas descartes"
+
+    "conda activate wrangler"
+
+    "pip install pygbif python-dwca-reader"
+
+3.  Copy the __wranglerconfig_TEMPLATE.txt__ file to your computer and delete "TEMPLATE" from the copied file's name ("__wranglerconfig.txt__").  Fill out this file.  Use "/" at the end of paths (i.e. "C:/Data/").
 4.  Set up an account on GBIF.org and enter your credentials into your copy of wranglerconfig.txt.
 5.  Download [DB Browser for SQLite](https://sqlitebrowser.org/) or another application for interacting with SQLite database.
-6.  Run one of the notebook documents in the "Tests" folder.
+6.  Run the Quick Test notebook document.
 
 ## Using the Wildlife Wrangler
 The Wildlife Wrangler ("the wrangler") is a set of tools to facilitate queries and filtering of species occurrence records.  While it automates many tasks, there is still a bit of work that must be done by the user.
