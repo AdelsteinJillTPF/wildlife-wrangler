@@ -427,7 +427,6 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
     records2 = schema_df.combine_first(records1)
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  Results
-    records2.to_csv(working_directory + "ebd_data.csv")
     print("Prepared the eBird records for processing: " + str(datetime.now() - timestamp))
     return records2
 
@@ -721,7 +720,6 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
     print("Prepared GBIF records for processing: " + str(datetime.now() - timestamp))
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  Results
-    records2.to_csv(working_directory + "gbif_data.csv")                            # CAN REMOVE THIS
     return records2
 
 def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_directory, query_name):
@@ -1081,10 +1079,10 @@ def drop_duplicates_latlongdate(df):
     Function to find and remove duplicate occurrence records within the
     wildlife wrangler workflow.  When duplicates exist, the record with the
     higher decimal precision is kept, and if precision values are equal, then the
-    record with the higher individualCount is retained. Accounts for existence
+    record with the smallest radius_m is retained. Accounts for existence
     of records with a mix of decimal precision in latitude and longitude
-    values. The process is a little complex.   The first data frame is cleaned
-    up by dropping duplicates based on which record has greater individual count.
+    values. The process is a little complex.  The first data frame is cleaned
+    up by dropping duplicates based on which record has smaller buffer radius.
     Before doing that, records with unequal decimal precision in the latitude
     and longitude fields and those fields are truncated to the shorter precision
     present. An input data frame likely contains records with equal decimal
@@ -1147,13 +1145,13 @@ def drop_duplicates_latlongdate(df):
     """
     ########  INITIAL DROP OF DUPLICATES
     Initial drop of duplicates on 'latitude', 'longitude', 'eventDate',
-    keeping the first (highest individual count)
-    Sort so that the highest individual count is first ## ADD OCCURRENCEDATE BACK IN
+    keeping the first (lowest radius_m)
+    Sort so that the lowest radius_m is first
     """
     df = (df
           .sort_values(by=['decimalLatitude', 'decimalLongitude', 'eventDate',
-                           'individualCount'],
-                       ascending=False, kind='mergesort', na_position='last')
+                           'radius_m'],
+                       ascending=True, kind='mergesort', na_position='last')
           .drop_duplicates(subset=['decimalLatitude', 'decimalLongitude',
                                    'eventDate'],
                            keep='first'))
@@ -1370,7 +1368,6 @@ def spatial_output(database, make_file, mode, output_file, epsg=4326):
 
             # Points aren't appropriate footprintWKT for this framework - remove.
             ftp = ftp[~ftp["footprintWKT"].str.contains("POINT")].copy()
-            print(len(ftp))
 
             if ftp.empty == False:
                 ftp["footprint"] = ftp["footprintWKT"].apply(lambda x: wkt.loads(str(x)))

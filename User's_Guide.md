@@ -60,7 +60,7 @@ In summary, mapping occurrence records involves approximating non-point geometri
 
 __Removing Duplicate Records__ -- Queries commonly include duplicates based on the latitude, longitude, and date fields.  The user can opt to keep or exclude duplicates.  If they choose to exclude them, a multi-step process is triggered to account for two major issues.  One, the values of latitude and longitude for a record may have different numbers of digits to the right of the decimal (i.e., latitude has eight decimals but longitude has six).  Two, not all records have the same number of digits to the right of the decimal for latitude and longitude (i.e., one record may have two for latitude and longitude while another has 12).  The process used is as follows:
   1. Latitude and longitude values of each record are truncated to the shorter of the two in cases where they differ.
-  2. If duplicates occur after that step, then the one with the largest individual count is kept, or the sorted first record if individual counts are the same.
+  2. If duplicates occur after that step, then the one with the smallest buffer radius is kept, or the sorted first record if radii are the same.
   3. Records are identified that are a duplicate of a record with higher precision (e.g. (10.123, -10.123) would be flagged as a duplicate of (10.1234, -10.1234)).
   4. Duplicates are again removed.
 
