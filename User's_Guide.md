@@ -21,7 +21,7 @@ The user begins by creating a copy of the __Query_Form_TEMPLATE.ipynb__, which t
 
 #### Key Components of the Framework
 *  __Filter sets__ -- Saving filter sets (criteria) and taxa concepts as unique items (JSON files) makes it much easier to explore combinations of taxa definitions and filtering criteria.  For example, if you want to use the same criteria for 20 species, you can call the same criteria each of the 20 times with just the codes.  This setup was chosen with the running of hundreds of queries over time in mind.
-*  __Report.ipynb__ -- this is where you control/run the wrangler.  The file is a combined form and report all in one.  You can copy the report notebook document, rename it, fill it out, and run it to perform queries/downloads.
+*  __Query_Form.ipynb__ -- this is where you control/run the wrangler.  The file is a combined form and report all in one.  You can copy the notebook document, rename it, fill it out, and run it to perform queries/downloads.
 *  __wranglerconfig.py__ -- this is a .py file where you store some personal information that you wouldn't want saved in the notebook document: your email address and password for your GBIF account, which is needed in order to request downloads from GBIF.  A file path to an eBird Basic Dataset is saved here as well.
 *  __wrangler_functions.py__ -- a python module containing the core functions of the wrangler.  DO NOT CHANGE THIS!  Much of the necessary code is kept here to avoid having a thousand lines of code in the report.ipynb.  You can call some helper functions from this by importing the module in ipython (i.e., "import wrangler_functions as wranglers").  That can be handy for using the "get_GBIF_code" and "generate_shapefile" functions.
 
