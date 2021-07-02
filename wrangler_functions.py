@@ -878,7 +878,7 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
     Records are broken apart by source (GBIF, GBIF/EOD, EBD), processed,
     and then concatenated in order to account for all conditions.
 
-    If footprintWKT is provided, it will be used by generate_shapefile instead
+    If footprintWKT is provided, it will be used by spatial_output instead
     of point buffering.
     '''
     # Records from GBIF with coordinate uncertainty (georeferenced)
