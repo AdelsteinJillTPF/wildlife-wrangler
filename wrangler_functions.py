@@ -1293,7 +1293,7 @@ def ccw_wkt_from_shapefile(shapefile, out_txt):
         print("You need to reproject the shapefile to EPSG:4326")
     return
 
-def spatial_output(database, make_file, mode, output_file):
+def spatial_output(database, make_file, mode, output_file, epsg=4326):
     '''
     Creates a shapefile of species occurrence records from a wildlife wrangler
         output SQLite database.
@@ -1307,6 +1307,7 @@ def spatial_output(database, make_file, mode, output_file):
         3) "random" creates the footprints and then picks a random point within
         each footprint polygon.
     output_file : Path (and name) of the file to be created.
+    epsg : integer epsg number for the desired geographic projection for results.
 
     OUTPUT
     ------
@@ -1315,91 +1316,110 @@ def spatial_output(database, make_file, mode, output_file):
     from datetime import datetime
     import sqlite3
     import pandas as pd
+    import numpy as np
     import geopandas as gpd
     import random
     from shapely.geometry import Point
+    from shapely import wkt
+
     timestamp = datetime.now()
 
     # Get the record coordinates as a data frame
     records = (pd.read_sql("""SELECT * FROM occurrence_records;""",
                            con=sqlite3.connect(database))
                            .astype({'decimalLongitude': 'float',
-                                   'decimalLatitude': 'float',
-                                   'radius_m': 'float'}))
+                                    'decimalLatitude': 'float',
+                                    'radius_m': 'float'}))
 
     # Make a point geometry from coordinates
     gdf = gpd.GeoDataFrame(records,
                            geometry=gpd.points_from_xy(records['decimalLongitude'],
                                                        records['decimalLatitude']))
 
-    # Set the coordinate reference system
-    gdf.crs={'init' :'epsg:4326'}
+    # Set the coordinate reference system and reproject to Albers
+    gdf.crs={"init" : "epsg:4326"}
+    #gdf = gdf.to_crs(epsg=5070)
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  POINTS
     # If user just wants shapefile of given coordinates (point method)
     if mode == "points":
+        if epsg != 4326:
+            gdf = gdf.to_crs(epsg=epsg)
+
+        # Save points
         if make_file == True:
-            # Simply save points
             gdf.to_file(output_file)
+            print("Generated points")
 
         out = gdf
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  FOOTPRINTS
-    # If the user wants to identify record footprints (point-radius or shape method)
-    if mode == "footprints":
-        # Reproject record coordinates to facilitate buffering
-        feetprints = gdf.to_crs(epsg=5070)
+    else:
+        # Point-radius method -- needs to be EPSG 5070
+        gdf = gdf.to_crs(epsg=5070)
+        gdf["footprint"] = gdf.apply(lambda x: x.geometry.buffer(x.radius_m), axis=1)
+        gdf.set_geometry(col="footprint", inplace=True, drop=True)
+        gdf = gdf.to_crs(epsg=4326)
+        gdf["footprint"] = gdf["geometry"]
 
-        # Use point-radius method
-        feetprints['footprint'] = feetprints.apply(lambda x: x.geometry.buffer(x.radius_m), axis=1)
-        feetprints.set_geometry(col='footprint', inplace=True, drop=True)
-
-        # Overwrite when footprint WKT is provided (shape method; careful with projection) FORTHCOMING
+        # Use the footprintWKT when provided, be sure to reproject (shape method)
         if list(gdf['footprintWKT'].unique()) != ['nan']:
-            print("ALERT! footprintWKT was provided but not used.")
+            print("Some footprintWKT were provided.")
+            # Separate data frame for records with footprintWKT, load WKT
+            ftp = gdf[gdf["footprintWKT"] != "nan"].copy()
 
+            # Points aren't appropriate footprintWKT for this framework - remove.
+            ftp = ftp[~ftp["footprintWKT"].str.contains("POINT")].copy()
+            print(len(ftp))
+
+            if ftp.empty == False:
+                ftp["footprint"] = ftp["footprintWKT"].apply(lambda x: wkt.loads(str(x)))
+
+                # Handle geometry
+                ftp.set_geometry(col="footprint", inplace=True, drop=False)
+                ftp.crs={"init" : "epsg:4326"}
+                ftp = ftp.copy()[["record_id", "footprint"]]
+
+                # Combine the two data frame's geoseries, with preference to footprint
+                gdf.update(ftp)
+
+            # Reset the geometry column
+            gdf.set_geometry(col='footprint', inplace=True, drop=True)
+
+        if mode != "random":
+            print("Generated footprints")
+
+        # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  RANDOM POINTS
+        # If the user wants a random point selected from within each footprint
+        if mode == "random":
+            # Function to generate random points
+            def generate_random(number, polygon):
+                points = []
+                minx, miny, maxx, maxy = polygon.bounds
+                while len(points) < number:
+                    pnt = Point(random.uniform(minx, maxx), random.uniform(miny, maxy))
+                    if polygon.contains(pnt):
+                        points.append(pnt)
+                return points
+
+            # Generate random points
+            gdf["random_points"] = gdf["geometry"].apply(lambda x: generate_random(1, x)[0])
+            gdf.drop(["geometry"], axis=1, inplace=True)
+            gdf.set_geometry(col='random_points', inplace=True, drop=True)
+            print("Generated random points")
+
+        # Reproject
+        if epsg != 4326:
+            gdf = gdf.to_crs(epsg=epsg)
+
+        # Save points
+        #gdf.drop(["geometry"], axis=1, inplace=True)
         if make_file == True:
-            # Save results as shapefile
-            feetprints.to_file(output_file)
+            gdf.to_file(output_file)
 
-        out = feetprints
+        out = gdf
 
-    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  RANDOM POINTS
-    # If the user wants a random point selected from within each footprint
-    if mode == "random":
-        # Reproject record coordinates to facilitate buffering
-        feetprints = gdf.to_crs(epsg=5070)
-
-        # Use point-radius method
-        feetprints['footprint'] = feetprints.apply(lambda x: x.geometry.buffer(x.radius_m), axis=1)
-        feetprints.set_geometry(col='footprint', inplace=True, drop=True)
-
-        # Overwrite when footprint WKT is provided (shape method; careful with projection) FORTHCOMING
-        if list(gdf['footprintWKT'].unique()) != ['nan']:
-            print("ALERT! footprintWKT was provided but not used.")
-
-        # Function to generate random points
-        def generate_random(number, polygon):
-            points = []
-            minx, miny, maxx, maxy = polygon.bounds
-            while len(points) < number:
-                pnt = Point(random.uniform(minx, maxx), random.uniform(miny, maxy))
-                if polygon.contains(pnt):
-                    points.append(pnt)
-            return points
-
-        # Generate random points
-        feetprints["random_points"] = feetprints["geometry"].apply(lambda x: generate_random(1, x)[0])
-        feetprints.drop(["geometry"], axis=1, inplace=True)
-        feetprints.set_geometry(col='random_points', inplace=True, drop=True)
-
-        if make_file == True:
-            # Save results as shapefile
-            feetprints.to_file(output_file)
-
-        out=feetprints
-
-    print("Exported shapefile: " + str(datetime.now() - timestamp))
+    print("Finished: " + str(datetime.now() - timestamp))
     return out
 
 def CONUS_bbox():
