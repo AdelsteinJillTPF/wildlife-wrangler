@@ -1027,7 +1027,7 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  SAVE
     # Reformat data to strings and insert into db.
-    df_filterZ.applymap(str).to_sql(name='occurrence_records', con = conn,
+    df_filterZ.replace("nan", pd.NA).applymap(str).to_sql(name='occurrence_records', con = conn,
                                   if_exists='replace')
     conn.close()
     return None
