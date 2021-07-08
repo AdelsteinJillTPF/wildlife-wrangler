@@ -616,8 +616,6 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
             print(e)
             print(download_filters)
 
-
-
         # Now download the actual zip file containing the Darwin Core files
         # NOTE: The download can take a while to generate and is not immediately
         # available once the download_get command has been issued. Use a
@@ -704,10 +702,12 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
                 .combine_first(records1)
                 # this replace is needed for API method
                 .replace({"coordinateUncertaintyInMeters": {"UNKNOWN": np.nan},
-                               "radius_m": {"UNKNOWN": np.nan},
-                               "individualCount": {"UNKNOWN": 1},
-                               "weight": {"UNKNOWN": 10},
-                               "detection_distance_m": {"UNKNOWN": 0}})
+                          "radius_m": {"UNKNOWN": np.nan},
+                          "coordinatePrecision": {"UNKNOWN": np.nan},
+                          "nominal_xy_precision": {"UNKNOWN": np.nan},
+                          "individualCount": {"UNKNOWN": 1},
+                          "weight": {"UNKNOWN": 10},
+                          "detection_distance_m": {"UNKNOWN": 0}})
                 .fillna({"coordinateUncertaintyInMeters": 0,
                          "radius_m": 0,
                          "individualCount": 1,
