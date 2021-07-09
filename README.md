@@ -53,7 +53,7 @@ This framework has certain features that support transparency and build confiden
   * _Basis of record and sampling protocols_ -- Data sets accessed through GBIF include a variety of types of records, such as preserved specimens and fossil records.  Additionally, different sampling protocols may have been employed.  The user can choose which types to filter out.
 
 
-## Recent changes (July 2, 2021)
+## Recent changes (July 9, 2021)
 * Made species level geometry filtering optional if polygon is present in taxon concept dictionary.
 * Included citations, rights, download key, and download doi for GBIF downloads.
 * Increased the number of attributes retained for GBIF records.
@@ -64,10 +64,10 @@ This framework has certain features that support transparency and build confiden
 * More sophisticated logic for interpreting and approximating the geographic locations of records in accordance with Chapman and Wieczorek (2020).
 * Added option to helper function that creates shapefiles from output that enables user to generate a point, record footprint, or extract a random point from within each occurrence records' footprint.
 * Duplicated record with the smallest locational uncertainty is now kept (if user opts to drop duplicates) instead of the record with the highest individual count.
+* Ability to interpret the shape georeference methods by using the Darwin Core attribute "footprintWKT"
 
 ## Coming soon
-* Ability to interpret the shape georeference methods by using the Darwin Core attribute "footprintWKT"
-* Incorporating tools for navigating taxa concept matching and assessment.
+* No major updates or additions are planned at this time.
 
 ## Inputs
 Data is gathered from databases via GBIF, and records can be queried from a copy of the EBird Basic Dataset that the user has acquired from eBird.  The user also builds or inputs taxon concepts and filter parameters.
@@ -78,8 +78,7 @@ On a per-species, per-query basis
 * Notebook documents that describe decisions made by the user and summarize the properties of acquired records.
 
 ## Constraints
-* Currently may only work with Windows 10 operating systems.  
-* Use of geometry parameters with DWCA download function doesn't work with current version of pygbif, but the next version of pygbif will include a bug fix.  In the meantime, rely upon latitude and longitude parameters instead.
+* Currently may only work with Windows 10 operating systems.
 * Queries returning > 5,000,000 records may fail.
 * Processing can be slow due to large quantities of records, spatial processing, and/or slow speed of eBird's Auk R package.
 
