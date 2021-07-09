@@ -805,7 +805,7 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
             value_df = (pd.DataFrame(value_count)
                         .reset_index()
                         .rename({'record_id': step, column: 'value'}, axis=1))
-            value_df['attribute'] = column
+            value_df["attribute"] = column
             value_df = value_df[["attribute", "value", step]]
             if value_df.empty == False:
                 attributes.append(value_df)
@@ -992,7 +992,12 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  SUMMARIZE VALUES AGAIN
     timestamp = datetime.now()
     # Store value summary in a dataframe
-    retained = summarize_values(dataframe=df_filterZ, step='retained')
+    if df_filterZ.empty == False:
+        retained = summarize_values(dataframe=df_filterZ, step='retained')
+
+    if df_filterZ.empty == True:
+        retained = acquired.copy().drop(["acquired"], axis=1)
+        retained["retained"] = 0
 
     # Concat acquired and retained data frames
     summary_df = pd.merge(retained, acquired, on=['attribute', 'value'], how='inner')
@@ -1003,11 +1008,17 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
                              'retained']]
 
     # Summarize sources
-    source_df2 = df_filterZ[['institutionID', 'collectionCode', 'datasetName', 'record_id']]
-    source_summary2 = (source_df2
-                       .groupby(by=['institutionID', 'collectionCode', 'datasetName'])
-                       .size()
-                       .reset_index(name='retained'))
+    if df_filterZ.empty == False:
+        source_df2 = df_filterZ[['institutionID', 'collectionCode', 'datasetName', 'record_id']]
+        source_summary2 = (source_df2
+                           .groupby(by=['institutionID', 'collectionCode', 'datasetName'])
+                           .size()
+                           .reset_index(name='retained'))
+
+    if df_filterZ.empty == True:
+        print(source_summary1)
+        source_summary2 = source_summary1.copy().drop(["acquired"], axis=1)
+        source_summary2["retained"] = 0
 
     # Concat acquired and retained source summary data frames
     source_summaries = pd.merge(source_summary1, source_summary2,
