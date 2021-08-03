@@ -664,12 +664,24 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
         cursor.executescript("""CREATE TABLE GBIF_download_info
                                 (download_key TEXT, doi TEXT, citations TEXT,
                                  rights TEXT);""")
-        cursor.execute('''INSERT INTO GBIF_download_info (doi, citations,
-                                                          rights, download_key)
-                          VALUES ("{0}", "{1}", "{2}", "{3}")'''.format(doi,
-                                                                  citations,
-                                                                  rights,
-                                                                  dkey))
+        cursor.execute('''INSERT INTO GBIF_download_info (doi, download_key)
+                          VALUES ("{0}", "{1}")'''.format(doi, dkey))
+
+        try:
+            cursor.execute('''INSERT INTO GBIF_download_info (citations)
+                              VALUES ("{0}")'''.format(citations))
+        except Exception as e:
+            print(e)
+            cursor.execute('''INSERT INTO GBIF_download_info (citations)
+                              VALUES ("Failed")''')
+        try:
+            cursor.execute('''INSERT INTO GBIF_download_info (rights)
+                              VALUES ("{0}")'''.format(rights))
+        except Exception as e:
+            print(e)
+            cursor.execute('''INSERT INTO GBIF_download_info (rights)
+                              VALUES ("Failed")''')
+
         print("Stored GBIF Download DOI etc.: " + str(datetime.now() - timestamp))
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  SUMMARIZE
