@@ -637,9 +637,17 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
                 # Read the relevant files from within the darwin core archive
                 with DwCAReader(working_directory + dkey + '.zip') as dwca:
                     dfRaw = dwca.pd_read('occurrence.txt', low_memory=False)
-                    citations = dwca.open_included_file('citations.txt').read()
-                    rights = dwca.open_included_file('rights.txt').read()
                     doi = dwca.metadata.attrib["packageId"]
+                    try:
+                        citations = dwca.open_included_file('citations.txt').read()
+                    except Exception as e:
+                        citations = "Failed"
+                        print(e)
+                    try:
+                        rights = dwca.open_included_file('rights.txt').read()
+                    except Exception as e:
+                        rights = "Failed"
+                        print(e)
                     gotit = True
                 print("Download complete: " + str(datetime.now() - timestamp))
             except:
@@ -847,9 +855,6 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
     df_unfiltered['digits_latitude'] = [len(x.split(".")[1]) for x in df_unfiltered['decimalLatitude']]
     df_unfiltered['digits_longitude'] = [len(x.split(".")[1]) for x in df_unfiltered['decimalLongitude']]
 
-    # Calculate nominal precisions (meters)
-    '''digitsX = {1: 10, 2: 100, 3: 1000, 4: 10000, 5: 100000}
-    x =(111321 * np.cos(float(latitude) * np.pi/180))/digitsX[len(long[1])] # decimal gets moved based on digits.'''
     # Longitude precision
     digitsX = {1: 10, 2: 100, 3: 1000, 4: 10000, 5: 100000}
     df_unfiltered["temp"] = df_unfiltered["decimalLatitude"].apply(lambda x: 111321 * np.cos(float(x) * np.pi/180))
