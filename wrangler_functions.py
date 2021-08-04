@@ -1319,7 +1319,7 @@ def ccw_wkt_from_shapefile(shapefile, out_txt):
         print("You need to reproject the shapefile to EPSG:4326")
     return
 
-def spatial_output(database, make_file, mode, output_file, epsg=4326):
+def spatial_output(database, make_file, mode, output_file=None, epsg=4326):
     '''
     Creates a shapefile of species occurrence records from a wildlife wrangler
         output SQLite database.
@@ -1389,10 +1389,10 @@ def spatial_output(database, make_file, mode, output_file, epsg=4326):
         gdf["footprint"] = gdf["geometry"]
 
         # Use the footprintWKT when provided, be sure to reproject (shape method)
-        if list(gdf['footprintWKT'].unique()) != ['nan']:
+        if list(gdf['footprintWKT'].unique()) != ["<NA>"]:
             print("Some footprintWKT were provided.")
             # Separate data frame for records with footprintWKT, load WKT
-            ftp = gdf[gdf["footprintWKT"] != "nan"].copy()
+            ftp = gdf[gdf["footprintWKT"] != "<NA>"].copy()
 
             # Points aren't appropriate footprintWKT for this framework - remove.
             ftp = ftp[~ftp["footprintWKT"].str.contains("POINT")].copy()
@@ -1408,8 +1408,8 @@ def spatial_output(database, make_file, mode, output_file, epsg=4326):
                 # Combine the two data frame's geoseries, with preference to footprint
                 gdf.update(ftp)
 
-            # Reset the geometry column
-            gdf.set_geometry(col='footprint', inplace=True, drop=True)
+        # Reset the geometry column
+        gdf.set_geometry(col='footprint', inplace=True, drop=True)
 
         if mode != "random":
             print("Generated footprints")
