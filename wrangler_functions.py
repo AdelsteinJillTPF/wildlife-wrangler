@@ -682,7 +682,7 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
                               WHERE doi = "{1}"'''.format(rights, doi))
         except Exception as e:
             print(e)
-            cursor.execute('''UDPATE GBIF_download_info
+            cursor.execute('''UPDATE GBIF_download_info
                               SET rights = "Failed"
                               WHERE doi = "{0}"'''.format(doi))
 
