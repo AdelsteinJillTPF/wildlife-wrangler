@@ -457,10 +457,12 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
     pd.set_option('display.width', 1000)
     import sqlite3
     from pygbif import occurrences
+    import pygbif
     import os
     os.chdir('/')
     import json
     import platform
+    import tempfile
     import shapely
     from shapely.wkt import dumps, loads
     from datetime import datetime
@@ -469,6 +471,11 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
     from dwca.read import DwCAReader
     import numpy as np
     timestamp = datetime.now()
+
+    # Set up temp directory
+    #os.environ["TMP"] = working_directory
+    #tempfile.TemporaryDirectory(working_directory + "temp/")
+    #pygbif.caching(name = working_directory + "DWCA_cache.sqlite")
 
     # Some prep
     output_database = working_directory + query_name + '.sqlite'
@@ -652,7 +659,7 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
                 print("Download complete: " + str(datetime.now() - timestamp))
             except:
                 wait = datetime.now() - timestamp
-                if wait.seconds > 60*45:
+                if wait.seconds > 60*1000:
                     gotit = True
                     print("TIMED OUT")
                 else:
@@ -1368,7 +1375,6 @@ def spatial_output(database, make_file, mode, output_file=None, epsg=4326):
 
     # Set the coordinate reference system and reproject to Albers
     gdf.crs={"init" : "epsg:4326"}
-    #gdf = gdf.to_crs(epsg=5070)
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  POINTS
     # If user just wants shapefile of given coordinates (point method)
@@ -1444,7 +1450,7 @@ def spatial_output(database, make_file, mode, output_file=None, epsg=4326):
         # Save points
         #gdf.drop(["geometry"], axis=1, inplace=True)
         if make_file == True:
-            gdf.to_file(output_file)
+            gdf.to_file(output_file, driver='ESRI Shapefile', encoding="UTF-8")
 
         out = gdf
 

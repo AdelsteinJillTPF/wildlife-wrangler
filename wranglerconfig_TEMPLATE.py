@@ -13,6 +13,9 @@ gbif_password = ""
 # Where to put output
 workDir = ""
 
+# Where to store temporary files
+tempDir = ""
+
 # Where to find the "wildlife-wrangler" repo cloned from github.
 codeDir = ""
 
