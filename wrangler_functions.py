@@ -659,7 +659,7 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
                 print("Download complete: " + str(datetime.now() - timestamp))
             except:
                 wait = datetime.now() - timestamp
-                if wait.seconds > 60*1000:
+                if wait.seconds > 60*1440:
                     gotit = True
                     print("TIMED OUT")
                 else:
