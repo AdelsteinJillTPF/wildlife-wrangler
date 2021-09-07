@@ -1,20 +1,15 @@
 # The Wildlife Wrangler
-__Maintainer__
-
-Nathan M. Tarr (nmtarr@ncsu.edu, [orcid:0000-0003-2925-8948](https://orcid.org/0000-0003-2925-8948), github.com/nmtarr)
-
-__Contributors__
-
-Alexa McKerrow (amckerrow@usgs.gov, [orcid:0000-0002-8312-2905](https://orcid.org/0000-0002-8312-2905))
-
-Matthew Rubino (mjrubino@ncsu.edu, [orcid:0000-0003-0651-3053](https://orcid.org/0000-0003-0651-3053))
+The abundance of wildlife occurrence data sets that are currently accessible can be valuable for efforts such as species distribution modeling and range delineation.  However, the task of downloading and filtering occurrence records is often complex due to errors and uncertainties that are present in data sets (Tessarolo et al. 2017).  This repository provides a framework for acquiring and filtering occurrence data that are freely available through the Global Biodiversity Information Facility's ([GBIF](https://gbif.org)) API and eBird Basic Dataset ([EBD](https://ebird.org/science/use-ebird-data/)).
 
 ## USGS Software Release Information
-IP-120038
-https://doi.org/10.5066/P98K7E93
+The official USGS software release will be found at https://doi.org/10.5066/P98K7E93F.  The master branch will have the most up-to-date approved version of the code.  That branch can be cited as follows.
 
-## Purpose
-The abundance of wildlife occurrence data sets that are currently accessible can be valuable for efforts such as species distribution modeling and range delineation.  However, the task of downloading and filtering occurrence records is often complex due to errors and uncertainties that are present in data sets (Tessarolo et al. 2017).  This repository provides a framework for acquiring and filtering occurrence data that are freely available through the Global Biodiversity Information Facility's ([GBIF](https://gbif.org)) API and eBird Basic Dataset ([EBD](https://ebird.org/science/use-ebird-data/)).     
+Tarr, N. M., McKerrow, A. J., and M. J. Rubino. 2021. The wildlife wrangler 0.4.0. U.S. Geological Survey software release. https://doi.org/10.5066/P98K7E93
+IP-120038
+
+Development : Nathan Tarr (nmtarr@ncsu.edu, [orcid:0000-0003-2925-8948](https://orcid.org/0000-0003-2925-8948), github.com/nmtarr)
+Contributors : Alexa McKerrow (amckerrow@usgs.gov, [orcid:0000-0002-8312-2905](https://orcid.org/0000-0002-8312-2905)) and
+Matthew Rubino (mjrubino@ncsu.edu, [orcid:0000-0003-0651-3053](https://orcid.org/0000-0003-0651-3053))
 
 ## Framework
 Records are requested from occurrence data sets and filtered according to species- and query-specific parameters.  Filtered occurrence records are saved in a database.  The details of taxa concepts and filter parameters can be stored as JSON files for reuse and reference.  Additionally, Jupyter Notebook documents are created that describe the filtered data sets for the sake of documentation and filter set refinement.
@@ -79,20 +74,17 @@ On a per-species, per-query basis
 
 ## Constraints
 * Currently may only work with Windows 10 operating systems.
-* Queries returning > 5,000,000 records may fail.
+* Queries returning > 1,000,000 records may fail.
 * Processing can be slow due to large quantities of records, spatial processing, and/or slow speed of eBird's Auk R package.
 
 ## Dependencies
-Python 3 and numerous packages including sqlite3 with the spatialite extension are needed.  Running the following code in a conda shell should create a suitable environment named "wrangler":
+Python 3 and numerous packages are needed.  Running the following code in a conda shell should create a suitable environment named "wrangler":
 1. "conda create -n wrangler python=3.6 ipython rpy2 pandas jupyter notebook numpy shapely matplotlib r-base geopandas descartes"
 2. "conda activate wrangler"
 3. "pip install pygbif python-dwca-reader"
 
 ## Code
 All code is included in this repository.  Runtimes of discrete tasks made grouping code into separate functions preferable.  
-
-## Suggested Citation
-Tarr, N. M., McKerrow, A. J., and M. J. Rubino. 2021. The Wildlife Wrangler. U.S. Geological Survey software release, accessed June 6, 2021, at https://doi.org/10.5066/P98K7E93
 
 ## Copyright and License
 Unless otherwise noted, This project is in the public domain in the United States because it contains materials that originally came from the United States Geological Survey, an agency of the United States Department of Interior. For more information, see the official USGS copyright policy at https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits
