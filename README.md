@@ -5,9 +5,11 @@ The abundance of wildlife occurrence data sets that are currently accessible can
 The official USGS software release will be found at https://doi.org/10.5066/P98K7E93F.  The master branch will have the most up-to-date approved version of the code.  That branch can be cited as follows.
 
 Tarr, N. M., McKerrow, A. J., and M. J. Rubino. 2021. The wildlife wrangler 0.4.0. U.S. Geological Survey software release. https://doi.org/10.5066/P98K7E93
+
 IP-120038
 
 Development : Nathan Tarr (nmtarr@ncsu.edu, [orcid:0000-0003-2925-8948](https://orcid.org/0000-0003-2925-8948), github.com/nmtarr)
+
 Contributors : Alexa McKerrow (amckerrow@usgs.gov, [orcid:0000-0002-8312-2905](https://orcid.org/0000-0002-8312-2905)) and
 Matthew Rubino (mjrubino@ncsu.edu, [orcid:0000-0003-0651-3053](https://orcid.org/0000-0003-0651-3053))
 
