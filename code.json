@@ -28,13 +28,13 @@
 		"range maps",
 		"GBIF",
 		"species occurrence records",
-		"doi|https://doi.org/10.5066/P98K7E93"],
+		"doi|https://doi.org/10.5066/P98K7E93F"],
 	"languages": ["Python", "The Jupyter Notebook", "SQL", "R"],
 	"contact": {
 		"name": "Nathan M. Tarr",
 		"email": "nmtarr@ncsu.edu"
 	},
 	"date": {
-		"metadataLastUpdated": "2021-09-07"
+		"metadataLastUpdated": "2021-09-15"
 	}
 }]

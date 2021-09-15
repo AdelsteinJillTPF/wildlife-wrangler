@@ -2,9 +2,9 @@
 The abundance of wildlife occurrence data sets that are currently accessible can be valuable for efforts such as species distribution modeling and range delineation.  However, the task of downloading and filtering occurrence records is often complex due to errors and uncertainties that are present in data sets (Tessarolo et al. 2017).  This repository provides a framework for acquiring and filtering occurrence data that are freely available through the Global Biodiversity Information Facility's ([GBIF](https://gbif.org)) API and eBird Basic Dataset ([EBD](https://ebird.org/science/use-ebird-data/)).
 
 ## USGS Software Release Information
-The official USGS software release will be found at https://doi.org/10.5066/P98K7E93F.  The master branch will have the most up-to-date approved version of the code.  That branch can be cited as follows.
+The official USGS software release will be found at https://doi.org/10.5066/P98K7E93F.  The master branch will have the most up-to-date approved version of the code.  That branch can be cited as follows:
 
-Tarr, N. M., McKerrow, A. J., and M. J. Rubino. 2021. The wildlife wrangler 0.4.0. U.S. Geological Survey software release. https://doi.org/10.5066/P98K7E93
+Tarr, N. M., McKerrow, A. J., and M. J. Rubino. 2021. The wildlife wrangler 0.4.0. U.S. Geological Survey software release. https://doi.org/10.5066/P98K7E93F
 
 IP-120038
 
@@ -50,7 +50,7 @@ This framework has certain features that support transparency and build confiden
   * _Basis of record and sampling protocols_ -- Data sets accessed through GBIF include a variety of types of records, such as preserved specimens and fossil records.  Additionally, different sampling protocols may have been employed.  The user can choose which types to filter out.
 
 
-## Recent changes (July 9, 2021)
+## Recent changes (September 15, 2021)
 * Made species level geometry filtering optional if polygon is present in taxon concept dictionary.
 * Included citations, rights, download key, and download doi for GBIF downloads.
 * Increased the number of attributes retained for GBIF records.
@@ -77,7 +77,7 @@ On a per-species, per-query basis
 ## Constraints
 * Currently may only work with Windows 10 operating systems.
 * Queries returning > 1,000,000 records may fail.
-* Processing can be slow due to large quantities of records, spatial processing, and/or slow speed of eBird's Auk R package.
+* Processing can be slow due to large quantities of records, spatial processing, and/or slow speed of eBird's [Auk R](https://cornelllabofornithology.github.io/auk/) package.
 
 ## Dependencies
 Python 3 and numerous packages are needed.  Running the following code in a conda shell should create a suitable environment named "wrangler":
@@ -98,4 +98,4 @@ This software is preliminary or provisional and is subject to revision. It is be
 ## References
 Chapman, A.D. & Wieczorek, J.R. (2020) Georeferencing Best Practices. Copenhagen: GBIF Secretariat. https://doi.org/10.15468/doc-gg7h-s853
 
-Tessarolo, G., Ladle, R., Rangel, T., and Hortal, J. 2017. Temporal degradation of data limits biodiversity research. Ecology and Evolution.  2017;7:6863–6870. DOI: 10.1002/ece3.3259.
+Tessarolo, G., Ladle, R., Rangel, T., and Hortal, J. 2017. Temporal degradation of data limits biodiversity research. Ecology and Evolution. 7:6863–6870. https://doi.org/10.1002/ece3.3259
