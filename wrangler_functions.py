@@ -270,7 +270,7 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
 
     # account for gps precision in distance filter.  error could exist on either
     #   end of a straight line path, so double precision when subtracting.
-    max_distance <- as.integer(ceiling((max_coordinate_uncertainty-(2*EBD_gps_precision))/1000))  ### NOT WORKING????
+    max_distance <- as.integer(ceiling((max_coordinate_uncertainty-(2*EBD_gps_precision))/1000))
     print(max_distance)
 
     # query --------------------------------------------------------------------
@@ -531,7 +531,7 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< GET RECORD COUNT
     timestamp = datetime.now()
     # First, find out how many records there are that meet criteria
-    occ_search = occurrences.search(gbif_id,
+    occ_search = occurrences.search(taxonKey=gbif_id,
                                     year=years,
                                     month=months,
                                     decimalLatitude=latRange,
@@ -541,7 +541,12 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
                                     country=country,
                                     geometry=filter_polygon)
     record_count=occ_search["count"]
+
+    # Return a message if the number of records excedes the known dwca-reader limit.
     print(str(record_count) + " records available")
+    if record_count > 4500000:
+        print("!!!!!!!  Too many records to proceed.  Break up the query",
+              " with year or other parameters.")
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< API QUERY
     if dwca_download == False:
@@ -586,7 +591,13 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
     if dwca_download == True:
         timestamp = datetime.now()
         '''
-        Request data using the download function.  Results are emailed.
+        Request data using the download function.  Results are emailed as a zip
+        file containing the Darwin Core files.  The download can take a while
+        to generate and is not immediately available once the download_get
+        command has been issued. Use a while and try loop to handle the wait.
+        The zipdownload variable will be a dictionary of the path,
+        the file size, and the download key unique code. It can be used
+        to change the file name, unzip the file, etc.
         '''
         # First, build a query list.  NoneType values cause problems, so only
         #   add arguments if their value isn't NoneType.
@@ -623,47 +634,53 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
             print(e)
             print(download_filters)
 
-        # Now download the actual zip file containing the Darwin Core files
-        # NOTE: The download can take a while to generate and is not immediately
-        # available once the download_get command has been issued. Use a
-        # while and try loop to make sure the download has succeeded.
-        # The zipdownload variable will be a dictionary of the path,
-        # the file size, and the download key unique code. It can be used
-        # to change the file name, unzip the file, etc.
-        print("Downloading Darwin Core Archive zip file for this species .....")
-        timestamp = datetime.now()
+        # Get the download, if not ready, keep trying
+        print("Waiting for the Darwin Core Archive.....")
+        timestamp2 = datetime.now()
+
         gotit = False
         while gotit == False:
             try:
-                zipdownload = occurrences.download_get(key=dkey,
-                                                       path=working_directory)
+                # Download the file
+                timestamp = datetime.now()
+                zipdownload = occurrences.download_get(key=dkey, path=working_directory)
+                print("Wait time for DWcA creation: " + str(datetime.now() - timestamp2))
+                print("Wait time for DWcA download: " + str(datetime.now() - timestamp))
+                gotit = True
             except:
-                pass
-
-            try:
-                # Read the relevant files from within the darwin core archive
-                with DwCAReader(working_directory + dkey + '.zip') as dwca:
-                    dfRaw = dwca.pd_read('occurrence.txt', low_memory=False)
-                    doi = dwca.metadata.attrib["packageId"]
-                    try:
-                        citations = dwca.open_included_file('citations.txt').read()
-                    except Exception as e:
-                        citations = "Failed"
-                        print(e)
-                    try:
-                        rights = dwca.open_included_file('rights.txt').read()
-                    except Exception as e:
-                        rights = "Failed"
-                        print(e)
-                    gotit = True
-                print("Download complete: " + str(datetime.now() - timestamp))
-            except:
-                wait = datetime.now() - timestamp
+                wait = datetime.now() - timestamp2
                 if wait.seconds > 60*1440:
                     gotit = True
-                    print("TIMED OUT")
-                else:
-                    pass
+                    print("FAILED!!! -- timed out after 24 hrs.  ",
+                          "Try again later or split up query with year paramters")
+
+        # Read the relevant files from within the Darwin Core archive
+        timestamp = datetime.now()
+        with DwCAReader(zipdownload["path"]) as dwca:
+            try:
+                dfRaw = dwca.pd_read('occurrence.txt', low_memory=False)
+            except Exception as e:
+                print("Read error:")
+                print(e)
+            try:
+                doi = dwca.metadata.attrib["packageId"]
+            except Exception as e:
+                print("DOI error:")
+                print(e)
+            try:
+                citations = dwca.open_included_file('citations.txt').read()
+            except Exception as e:
+                citations = "Failed"
+                print("Citation error:")
+                print(e)
+            try:
+                rights = dwca.open_included_file('rights.txt').read()
+            except Exception as e:
+                rights = "Failed"
+                print("Rights error:")
+                print(e)
+            print("Wait time for reading the DwCA: " + str(datetime.now() - timestamp))
+
 
         # Record DWCA metadata
         #   Store the value summary for the selected fields in a table.
