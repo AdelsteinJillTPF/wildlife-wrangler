@@ -149,6 +149,7 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
         if taxon_info[x] == None:
             taxon_info[x] = ""
 
+
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< R CODE
     code = '''
     EBD_file <- "{0}"
@@ -228,9 +229,12 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
     }}
 
     # prep bounding box --------------------------------------------------------
+    # make a full earth extent for use below
+    earth <- c(-180, -90, 180, 90)
+
     bbox <- NULL
     if (query_polygon == "" && taxon_polygon == "") {{
-        bbox <- NULL
+        bbox <- earth
     }} else if (query_polygon != "" && taxon_polygon == "") {{
         bbox <- st_bbox(st_as_sfc(query_polygon))
     }} else if (query_polygon == "" && taxon_polygon != "") {{
@@ -250,7 +254,7 @@ def get_EBD_records(taxon_info, filter_set, working_directory, EBD_file, query_n
       null_box <- FALSE
     }}
 
-    if (is.null(bbox) == TRUE && null_box == FALSE) {{
+    if (bbox == earth && null_box == FALSE) {{
       lat_min <- as.numeric(strsplit(lat_range, ",")[[1]][1])
       lat_max <- as.numeric(strsplit(lat_range, ",")[[1]][2])
       lng_min <- as.numeric(strsplit(lon_range, ",")[[1]][1])
