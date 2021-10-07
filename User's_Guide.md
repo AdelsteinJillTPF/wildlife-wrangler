@@ -2,11 +2,11 @@
 1.  Use [Git](https://git-scm.com/) to clone the master repo from github to your computer.
 2.  Build a [Conda](https://docs.conda.io/projects/conda/en/latest/index.html) environment. Running the following lines of code (individually) in a conda shell should create a suitable environment named "wrangler":
 
-    "conda create -n wrangler python=3.7 ipython=7.21.0 rpy2=2.9.4 pandas=1.2.3 jupyter notebook numpy=1.19.2 shapely=1.6.4 matplotlib=3.3.4 r-base=3.6.1 geopandas=0.6.1 descartes=1.1.0"
+    "conda create -n wrangler python=3.7 ipython=7.21.0 rpy2=2.9.4 pandas=1.2.3 jupyter=1.0.0 numpy=1.19.2 shapely=1.6.4 matplotlib=3.3.4 r-base=3.6.1 geopandas=0.6.1 descartes=1.1.0"
 
     "conda activate wrangler"
 
-    "pip install pygbif==0.6.0 python-dwca-reader requests-cache=0.7.0"
+    "pip install pygbif==0.6.0 python-dwca-reader requests-cache==0.7.0"
 
 3.  Copy the __wranglerconfig_TEMPLATE.txt__ file to your computer and delete "TEMPLATE" from the copied file's name ("__wranglerconfig.txt__").  Fill out this file.  Use "/" at the end of paths (i.e. "C:/Data/").
 4.  Set up an account on GBIF.org and enter your credentials into your copy of wranglerconfig.txt.
