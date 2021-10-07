@@ -6,7 +6,7 @@
 
     "conda activate wrangler"
 
-    "pip install pygbif==0.6.0 python-dwca-reader requests-cache==0.7.0"
+    "pip install pygbif==0.6.0 python-dwca-reader==0.15.0 requests-cache==0.7.0"
 
 3.  Copy the __wranglerconfig_TEMPLATE.txt__ file to your computer and delete "TEMPLATE" from the copied file's name ("__wranglerconfig.txt__").  Fill out this file.  Use "/" at the end of paths (i.e. "C:/Data/").
 4.  Set up an account on GBIF.org and enter your credentials into your copy of wranglerconfig.txt.
