@@ -551,6 +551,11 @@ def get_GBIF_records(taxon_info, filter_set, query_name, working_directory, user
     if record_count > 4500000:
         print("!!!!!!!  Too many records to proceed.  Break up the query",
               " with year or other parameters.")
+    if record_count <= 0 or record_count > 4500000:
+        # no records available so delete database and return empty dataframe
+        conn.close()
+        os.remove(output_database)
+        return pd.DataFrame()
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< API QUERY
     if dwca_download == False:
@@ -891,9 +896,33 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
     latitudes and number of digits provided.  Thus, coordinates have a nominal
     precision that may limit values.   Populate a column for this...'''
 
+    def split_helper(x):
+        '''Helper function that handles exceptions in Python split() method.
+            Works for entries such as nan, scientific notation, entries without a 
+            decimal point and non-numerical entries.
+
+            PARAMETERS
+            ----------
+            x : a string representation of a float
+
+            RETURNS
+            -------
+            x trimmed to a maximum of 5 digits, 0.0 for nan or non-numerical input
+        '''
+        if x == 'nan':
+            return "0.0"
+        try:
+            return(x.split(".")[0] + "." + x.split(".")[1][:5])
+        except:
+            try:
+                return f"{float(x):.5f}"
+            except Exception as e:
+                print(f'Error in split_helper(). Exception = {e}')
+                return "0.0"
+
     # Trim decimal length to 5 digits (lat and long).  Anything more is false precision.
-    df_unfiltered["decimalLatitude"] = df_unfiltered["decimalLatitude"].apply(lambda x: x.split(".")[0] + "." + x.split(".")[1][:5])
-    df_unfiltered["decimalLongitude"] = df_unfiltered["decimalLongitude"].apply(lambda x: x.split(".")[0] + "." + x.split(".")[1][:5])
+    df_unfiltered["decimalLatitude"] = df_unfiltered["decimalLatitude"].apply(lambda x: split_helper(x))
+    df_unfiltered["decimalLongitude"] = df_unfiltered["decimalLongitude"].apply(lambda x: split_helper(x))
 
     # Calculate the number of digits for latitude and longitude
     df_unfiltered['digits_latitude'] = [len(x.split(".")[1]) for x in df_unfiltered['decimalLatitude']]
