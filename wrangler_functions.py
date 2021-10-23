@@ -910,7 +910,7 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
             x trimmed to a maximum of 5 digits, 0.0 for nan or non-numerical input
         '''
         if x == 'nan':
-            return "0.0"
+            return np.nan
         try:
             return(x.split(".")[0] + "." + x.split(".")[1][:5])
         except:
@@ -918,11 +918,13 @@ def process_records(ebird_data, gbif_data, filter_set, taxon_info, working_direc
                 return f"{float(x):.5f}"
             except Exception as e:
                 print(f'Error in split_helper(). Exception = {e}')
-                return "0.0"
+                return np.nan
 
     # Trim decimal length to 5 digits (lat and long).  Anything more is false precision.
     df_unfiltered["decimalLatitude"] = df_unfiltered["decimalLatitude"].apply(lambda x: split_helper(x))
     df_unfiltered["decimalLongitude"] = df_unfiltered["decimalLongitude"].apply(lambda x: split_helper(x))
+    # Drop rows without a valid latitude or longitude
+    df_unfiltered.dropna(subset=["decimalLatitude", "decimalLongitude"],inplace=True)
 
     # Calculate the number of digits for latitude and longitude
     df_unfiltered['digits_latitude'] = [len(x.split(".")[1]) for x in df_unfiltered['decimalLatitude']]
